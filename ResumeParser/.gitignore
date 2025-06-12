@@ -1,0 +1,10 @@
+# Python bytecode files
+__pycache__/
+
+
+# Uploads folder (to avoid committing uploaded resumes)
+uploads/
+
+# Config files with sensitive info
+config.yaml
+
