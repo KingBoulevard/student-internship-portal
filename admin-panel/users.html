@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Users</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="users.html" class="active">Manage Users</a></li>
+      <li><a href="jobs.html">Manage Jobs</a></li>
+      <li><a href="reports.html">Reports</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <h1>Manage Users</h1>
+    </header>
+
+    <input type="text" id="search" placeholder="Search users...">
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="userTable">
+        <tr>
+          <td>001</td>
+          <td>Rabecca Mwale</td>
+          <td>rabecca.mwale@cs.unza.zm</td>
+          <td>Student</td>
+          <td>Active</td>
+          <td>
+            <button onclick="approveUser()">Approve</button>
+            <button onclick="blockUser()">Block</button>
+            <button onclick="deleteUser()">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
