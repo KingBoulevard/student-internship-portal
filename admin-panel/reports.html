@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Admin Panel</h2>
+    <ul>
+      <li><a href="index.html">Dashboard</a></li>
+      <li><a href="users.html">Manage Users</a></li>
+      <li><a href="jobs.html">Manage Jobs</a></li>
+      <li><a href="reports.html" class="active">Reports</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <header>
+      <h1>Reports</h1>
+    </header>
+
+    <section>
+      <h2>Applications per Job</h2>
+      <canvas id="applicationsChart"></canvas>
+    </section>
+
+    <section>
+      <h2>User Growth</h2>
+      <canvas id="usersChart"></canvas>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
