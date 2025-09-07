@@ -2,22 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard</title>
+  <title>Dashboard - Admin Panel</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
-  <!-- Sidebar -->
   <div class="sidebar">
     <h2>Admin Panel</h2>
-    <a href="index.html" class="active"><i class="fa fa-home"></i> Dashboard</a>
-    <a href="users.html"><i class="fa fa-users"></i> Manage Users</a>
-    <a href="jobs.html"><i class="fa fa-briefcase"></i> Manage Jobs</a>
-    <a href="reports.html"><i class="fa fa-chart-line"></i> Reports</a>
+    <ul>
+      <li><a href="index.html" class="active">Dashboard</a></li>
+      <li><a href="users.html">Manage Users</a></li>
+      <li><a href="jobs.html">Manage Jobs</a></li>
+      <li><a href="reports.html">Reports</a></li>
+    </ul>
   </div>
 
-  <!-- Main Content -->
   <div class="main-content">
     <header>
       <h1>Dashboard Overview</h1>
@@ -25,47 +24,13 @@
     </header>
 
     <section class="cards">
-      <div class="card">
-        <h3>Total Students</h3>
-        <div class="value">2,847</div>
-        <p class="trend positive">+12% this month</p>
-      </div>
-      <div class="card">
-        <h3>Total Employers</h3>
-        <div class="value">156</div>
-        <p class="trend positive">+8% this month</p>
-      </div>
-      <div class="card">
-        <h3>Active Jobs</h3>
-        <div class="value">489</div>
-        <p class="trend positive">+15% this month</p>
-      </div>
-      <div class="card">
-        <h3>Pending Approvals</h3>
-        <div class="value">23</div>
-        <p class="trend negative">-5% this month</p>
-      </div>
-    </section>
-
-    <section class="activity">
-      <div class="activity-box">
-        <h2>Recent User Registrations</h2>
-        <ul>
-          <li><i class="fa fa-user"></i> John Smith – Student • 2 minutes ago</li>
-          <li><i class="fa fa-building"></i> TechCorp Inc. – Employer • 1 hour ago</li>
-          <li><i class="fa fa-user"></i> Sarah Johnson – Student • 3 hours ago</li>
-        </ul>
-      </div>
-
-      <div class="activity-box">
-        <h2>Latest Job Postings</h2>
-        <ul>
-          <li><i class="fa fa-briefcase"></i> Frontend Developer Intern – Pending Review</li>
-          <li><i class="fa fa-briefcase"></i> Marketing Assistant – Active</li>
-          <li><i class="fa fa-briefcase"></i> Data Analyst Intern – Active</li>
-        </ul>
-      </div>
+      <div class="card"><h3>Total Students</h3><p>2,847</p></div>
+      <div class="card"><h3>Total Employers</h3><p>156</p></div>
+      <div class="card"><h3>Active Jobs</h3><p>489</p></div>
+      <div class="card"><h3>Pending Approvals</h3><p>23</p></div>
     </section>
   </div>
+
+  <script src="index.js"></script>
 </body>
 </html>
