@@ -1,80 +1,107 @@
-body {
+/* Reset */
+* {
   margin: 0;
-  font-family: Arial, sans-serif;
-  display: flex;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
 }
 
+body {
+  display: flex;
+  background: #f9fafb;
+  color: #111827;
+}
+
+/* Sidebar */
 .sidebar {
   width: 220px;
-  background: #2c3e50;
-  color: white;
-  min-height: 100vh;
-  padding: 15px;
+  height: 100vh;
+  background: #1f2937;
+  color: #fff;
+  padding: 20px;
+  position: fixed;
 }
 
 .sidebar h2 {
-  text-align: center;
   margin-bottom: 20px;
 }
 
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar ul li {
-  margin: 15px 0;
-}
-
-.sidebar ul li a {
-  color: white;
+.sidebar a {
+  display: block;
+  color: #cbd5e1;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 8px;
   text-decoration: none;
 }
 
-.sidebar ul li a.active {
-  font-weight: bold;
+.sidebar a.active,
+.sidebar a:hover {
+  background: #374151;
+  color: #fff;
 }
 
+/* Main Content */
 .main-content {
-  flex: 1;
+  margin-left: 240px;
   padding: 20px;
+  flex: 1;
 }
 
 header {
   margin-bottom: 20px;
 }
 
+/* Cards */
 .cards {
   display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
 .card {
+  background: #fff;
   flex: 1;
   padding: 20px;
-  background: #ecf0f1;
-  border-radius: 8px;
-  text-align: center;
-  font-size: 1.2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+.card .value {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 10px 0;
 }
 
-table, th, td {
-  border: 1px solid #ccc;
+.trend {
+  font-size: 12px;
+}
+.trend.positive {
+  color: green;
+}
+.trend.negative {
+  color: red;
 }
 
-th, td {
-  padding: 10px;
-  text-align: left;
+/* Activity */
+.activity {
+  display: flex;
+  gap: 20px;
 }
 
-button {
-  margin-right: 5px;
-  padding: 5px 10px;
+.activity-box {
+  flex: 1;
+  background: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.activity-box ul {
+  list-style: none;
+  margin-top: 10px;
+}
+
+.activity-box li {
+  margin-bottom: 8px;
 }
