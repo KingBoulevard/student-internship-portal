@@ -1,12 +1,90 @@
-# React + Vite
+# Student Internship and Job Portal – Frontend (React + Tailwind)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This branch (`frontend`) contains the **completed frontend implementation** of the Smart CareerBridge platform.  
+It includes UI, logic, and localStorage-based persistence for **Students, Employers, and Admins**, ready for backend integration.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+##  Features Implemented
 
-## Expanding the ESLint configuration
+###  Authentication
+- **Register**: Users can register as Student, Employer, or Admin.
+  - Employers are **unverified by default** until approved by Admin.
+  - Duplicate email check implemented.
+- **Login**: Basic login per role (no backend yet).
+- **Toast notifications** for success/errors.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+###  Student Role
+- **Dashboard**: Landing after login.
+- **Browse Jobs**: View jobs posted by employers.
+- **My Applications**: Track applied jobs (stored in localStorage).
+
+---
+
+###  Employer Role
+- **Dashboard** with posting and viewing jobs.
+- **Post Job** form: title, company, type, location, deadline.
+- **Manage Jobs**: Employers can view and manage their own postings.
+
+---
+
+### Admin Role
+- **Dashboard**: Summary cards with live counts:
+  - Total Users
+  - Verified Employers
+  - Total Jobs
+  - Applications
+- **Manage Users**:
+  - View all registered users
+  - **Approve/Unverify Employers**
+  - **Suspend/Reactivate Users**
+  - **Edit User Info** (name, email, role, verified flag)
+  - **Delete with Undo** (soft-delete, 8-second window)
+- **Manage Jobs**:
+  - View all posted jobs
+  - **Delete with Undo** (soft-delete, 8-second window)
+- Live updates synced across tabs (via localStorage `storage` events).
+
+---
+
+## Routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Login |
+| `/register` | Register new account |
+| `/student` | Student Dashboard |
+| `/student/jobs` | Student – Browse Jobs |
+| `/student/applications` | Student – My Applications |
+| `/employer` | Employer Dashboard |
+| `/employer/jobs` | Employer – My Jobs |
+| `/admin` or `/admin/dashboard` | Admin Overview |
+| `/admin/users` | Admin – Manage Users |
+| `/admin/jobs` | Admin – Manage Jobs |
+
+---
+
+##  LocalStorage Keys
+
+- `registeredUsers` → All registered users  
+- `employerJobs` → Jobs posted by employers  
+- `appliedJobs` → Jobs applied to by students  
+
+---
+
+##  Next Steps (Backend)
+
+- Replace localStorage with database + API endpoints  
+- Implement proper authentication (hashed passwords, sessions/JWT)  
+- Connect Student job applications to Employer job postings via backend  
+- Add CV Parser integration (4th member task)  
+
+---
+
+## How to Run
+
+```bash
+npm install
+npm run dev
