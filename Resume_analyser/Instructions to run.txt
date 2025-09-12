@@ -1,0 +1,51 @@
+1. Clone or copy the repo:
+
+git clone <repo-url>
+cd <repo-folder>
+
+2. Create a virtual environment (recommended):
+
+python -m venv venv
+
+3. Activate it (If you created one):
+
+Windows:
+venv\Scripts\activate
+
+Mac/Linux:
+source venv/bin/activate
+
+4. Install dependencies:
+
+pip install -r requirements.txt
+
+5. Download spaCy model (once per environment):
+
+python -m spacy download en_core_web_sm
+
+6. Create a .env file in the project root
+Add your MySQL credentials (example):
+
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=yourpassword
+DB_NAME=cv
+
+Each team member can set their own .env values depending on their local MySQL setup(Leave database name as cv).
+
+7. Run the Flask app:
+
+python app.py
+
+8. Open in browser:
+By default: http://127.0.0.1:5000/
+The app should auto-open.
+
+9. Upload a resume and test:
+
+Navigate to the main page.
+Select a PDF resume.
+Choose a job description.
+Click Analyze.
+
+10. View the admin dashboard

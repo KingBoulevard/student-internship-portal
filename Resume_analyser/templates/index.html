@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Analyzer</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>Resume Analyzer</h1>
+        <div>
+            <a href="{{ url_for('admin') }}">Admin Dashboard</a>
+        </div>
+    </div>
+
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <label>Resume (PDF):</label>
+        <input type="file" name="resume" required>
+
+        <label>Job Description:</label>
+        <select name="jd_text">
+            <option value="">Select a Job Description (optional)</option>
+            {% for jd in job_descriptions %}
+                <option value="{{ jd }}" {% if jd == selected_jd %}selected{% endif %}>{{ jd }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Analyze</button>
+    </form>
+
+    {% if result %}
+    <div class="results">
+        <h2>Results</h2>
+        <p><b>Name:</b> {{ result.name }}</p>
+        <p><b>Email:</b> {{ result.email }}</p>
+        <p><b>Mobile:</b> {{ result.mobile }}</p>
+        <p><b>Pages:</b> {{ result.pages }}</p>
+        <p><b>Skills:</b> {{ result.skills }}</p>
+
+        {% if score is defined %}
+            {% if score >= 80 %}
+                {% set color_class = "green" %}
+            {% elif score >= 50 %}
+                {% set color_class = "yellow" %}
+            {% else %}
+                {% set color_class = "red" %}
+            {% endif %}
+
+            <h3>Resume Score</h3>
+            <div class="progress-container">
+                <div class="progress-bar {{ color_class }}" style="width: {{ score }}%;">
+                    {{ score }}%
+                </div>
+            </div>
+        {% endif %}
+
+        {% if recommended_skills %}
+        <h3>Recommended Skills to Add</h3>
+        <ul>
+            {% for s in recommended_skills %}
+            <li>{{ s }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>
