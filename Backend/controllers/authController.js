@@ -92,8 +92,12 @@ const authController = {
             });
 
         } catch (error) {
-            console.error('Login error:', error);
-            res.status(500).json({ error: 'Login failed' });
+            console.error('Login error details:', {
+                message: error.message,
+                stack: error.stack,
+                email: req.body?.email
+            });
+            res.status(500).json({ error: 'Login failed: ' + error.message });
         }
     },
 
@@ -130,8 +134,32 @@ const authController = {
             // Add automatic identifiers based on user type
             const enhancedUserData = enhanceUserData(userData, userType, email);
 
+            console.log('Enhanced user data before create:', {
+                userType,
+                enhancedUserData,
+                hasPassword: !!enhancedUserData.password,
+                hasCompanyName: !!enhancedUserData.company_name,
+                hasIndustry: !!enhancedUserData.industry,
+                allFields: Object.keys(enhancedUserData).map(key => ({
+                    field: key,
+                    value: enhancedUserData[key],
+                    isUndefined: enhancedUserData[key] === undefined
+                }))
+            });
+
+            // 🎯 CRITICAL: Clean undefined values before database insertion
+            const cleanUserData = { ...enhancedUserData };
+            Object.keys(cleanUserData).forEach(key => {
+                if (cleanUserData[key] === undefined) {
+                    console.log(`Removing undefined field: ${key}`);
+                    delete cleanUserData[key];
+                }
+            });
+
+            console.log('Cleaned user data for database:', cleanUserData);
+
             // Create new user
-            const userId = await userModel.create(enhancedUserData);
+            const userId = await userModel.create(cleanUserData);
 
             res.status(201).json({
                 message: `${userType.charAt(0).toUpperCase() + userType.slice(1)} registered successfully`,
@@ -140,8 +168,21 @@ const authController = {
             });
 
         } catch (error) {
-            console.error('Registration error:', error);
-            res.status(500).json({ error: 'Registration failed' });
+            console.error('Registration error details:', {
+                message: error.message,
+                stack: error.stack,
+                userType: req.body?.email ? detectUserType(req.body.email) : 'unknown',
+                receivedData: req.body,
+                modelMethods: {
+                    student: Student ? Object.keys(Student) : 'Model not loaded',
+                    employer: Employer ? Object.keys(Employer) : 'Model not loaded',
+                    admin: Admin ? Object.keys(Admin) : 'Model not loaded'
+                }
+            });
+            res.status(500).json({ 
+                error: 'Registration failed: ' + error.message,
+                details: 'Check server logs for more information'
+            });
         }
     },
 
@@ -163,8 +204,13 @@ const authController = {
             });
 
         } catch (error) {
-            console.error('Profile fetch error:', error);
-            res.status(500).json({ error: 'Failed to fetch profile' });
+            console.error('Profile fetch error details:', {
+                message: error.message,
+                stack: error.stack,
+                userId: req.user?.id,
+                userType: req.user?.type
+            });
+            res.status(500).json({ error: 'Failed to fetch profile: ' + error.message });
         }
     },
 
@@ -181,8 +227,15 @@ const authController = {
                 return res.status(400).json({ error: 'Use change password endpoint for password updates' });
             }
 
-            // For now, return success - implement actual update later
-            const result = await userModel.update(id, updateData);
+            // Clean update data of undefined values
+            const cleanUpdateData = { ...updateData };
+            Object.keys(cleanUpdateData).forEach(key => {
+                if (cleanUpdateData[key] === undefined) {
+                    delete cleanUpdateData[key];
+                }
+            });
+
+            const result = await userModel.update(id, cleanUpdateData);
             if (result === 0) {
                 return res.status(404).json({ error: 'User not found' });
             }
@@ -190,12 +243,18 @@ const authController = {
             res.json({ 
                 message: 'Profile updated successfully',
                 userType: type,
-                updatedFields: Object.keys(updateData)
+                updatedFields: Object.keys(cleanUpdateData)
             });
 
         } catch (error) {
-            console.error('Profile update error:', error);
-            res.status(500).json({ error: 'Profile update failed' });
+            console.error('Profile update error details:', {
+                message: error.message,
+                stack: error.stack,
+                userId: req.user?.id,
+                userType: req.user?.type,
+                updateData: req.body
+            });
+            res.status(500).json({ error: 'Profile update failed: ' + error.message });
         }
     },
 
@@ -229,8 +288,13 @@ const authController = {
             res.json({ message: 'Password updated successfully' });
 
         } catch (error) {
-            console.error('Password change error:', error);
-            res.status(500).json({ error: 'Password change failed' });
+            console.error('Password change error details:', {
+                message: error.message,
+                stack: error.stack,
+                userId: req.user?.id,
+                userType: req.user?.type
+            });
+            res.status(500).json({ error: 'Password change failed: ' + error.message });
         }
     },
 
@@ -243,7 +307,8 @@ const authController = {
                 user: req.user 
             });
         } catch (error) {
-            res.status(401).json({ valid: false, error: 'Invalid token' });
+            console.error('Token verification error:', error.message);
+            res.status(401).json({ valid: false, error: 'Invalid token: ' + error.message });
         }
     }
 
@@ -255,14 +320,13 @@ const authController = {
  * Detects user type based on email domain and other identifiers
  */
 function detectUserType(email) {
-    if (!email.includes('@')) return 'employer'; // Invalid email
+    if (!email || !email.includes('@')) return 'employer';
     const emailDomain = email.toLowerCase().split('@')[1];
     
     // University student emails (customize for your university)
     const studentDomains = [
         'unza.zm',
         'cs.unza.zm',
-        // Add your actual university email domains
     ];
     
     // Admin identifiers (department emails or special patterns)
@@ -275,13 +339,13 @@ function detectUserType(email) {
     
     // Check for student domains
     if (studentDomains.includes(emailDomain)) {
-    return 'student';
-  }
+        return 'student';
+    }
     
     // Check for admin domains
     if (adminDomains.includes(emailDomain)) {
-    return 'admin';
-  }
+        return 'admin';
+    }
     
     // Check for admin registration keys (in registration data)
     if (email.includes('+admin') || email.includes('.admin')) {
@@ -303,7 +367,7 @@ async function tryAlternativeUserTypes(email, originalType) {
             const userModel = getUserModel(type);
             const user = await userModel.findByEmail(email);
             if (user) {
-                user.foundType = type; // Mark where we found it
+                user.foundType = type;
                 return user;
             }
         }
@@ -347,16 +411,27 @@ function enhanceUserData(userData, userType, email) {
     
     switch (userType) {
         case 'student':
-            // Generate student ID automatically
             enhanced.student_id = generateStudentId(email);
+            enhanced.is_active = enhanced.is_active !== undefined ? enhanced.is_active : true;
+            break;
+        case 'employer':
+            enhanced.is_active = enhanced.is_active !== undefined ? enhanced.is_active : true;
+            enhanced.is_verified = enhanced.is_verified !== undefined ? enhanced.is_verified : false;
             break;
         case 'admin':
-            // Set admin role based on email pattern
             enhanced.role = email.includes('super.') ? 'super_admin' : 'moderator';
-            // Remove department key from stored data (it's only for registration)
+            enhanced.is_active = enhanced.is_active !== undefined ? enhanced.is_active : true;
             delete enhanced.department_key;
             break;
     }
+    
+    // 🎯 CRITICAL: Remove any undefined values
+    Object.keys(enhanced).forEach(key => {
+        if (enhanced[key] === undefined) {
+            console.log(`Removing undefined field from enhanced data: ${key}`);
+            delete enhanced[key];
+        }
+    });
     
     return enhanced;
 }
@@ -411,7 +486,6 @@ function prepareUserData(user, userType) {
                 ...baseData,
                 company_name: user.company_name,
                 industry: user.industry,
-                is_verified: user.is_verified
             };
         case 'admin':
             return {
