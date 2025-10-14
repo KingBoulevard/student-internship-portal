@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { authAPI } from "../services/api"; // Make sure this path is correct
+import { authAPI } from "../services/api";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -14,37 +14,32 @@ function Login() {
     major: "",
     industry: ""
   });
+  const [tempEmployerData, setTempEmployerData] = useState(null); // Store employer data temporarily
   const navigate = useNavigate();
 
   // Smart user type detection based on email
   const detectUserType = (email) => {
     const emailDomain = email.toLowerCase().split('@')[1];
     
-    // University student emails
     const studentDomains = [
       'unza.zm',
       'cs.unza.zm',
-      // Add other university domains as needed
     ];
     
-    // Admin identifiers
     const adminDomains = [
       'admin.university.edu',
       'it.university.edu',
       'careers.university.edu'
     ];
     
-    // Check for student domains
     if (studentDomains.some(domain => emailDomain === domain || emailDomain.endsWith('.' + domain))) {
       return 'student';
     }
     
-    // Check for admin domains
     if (adminDomains.some(domain => emailDomain === domain)) {
       return 'admin';
     }
     
-    // Default to employer for all other emails
     return 'employer';
   };
 
@@ -104,10 +99,30 @@ function Login() {
           }
         }, 1200);
       } else {
-        toast.success(`Registration successful! You can now login.`);
-        setIsLogin(true); // Switch to login after successful registration
-        // Clear registration fields
-        setRegisterData({ name: "", company_name: "", major: "", industry: "" });
+        const userType = detectUserType(email);
+        
+        if (userType === 'employer') {
+          // 🎯 NEW: Store temporary employer data and redirect to additional details
+          setTempEmployerData({
+            email: email,
+            company_name: registerData.company_name,
+            industry: registerData.industry,
+            userId: response.id // From registration response
+          });
+          
+          toast.success("Account created! Please complete your company profile.");
+          
+          // Navigate to additional details page instead of login
+          setTimeout(() => {
+            navigate("/employer/additional-details");
+          }, 1500);
+          
+        } else {
+          // For students/admins, show success and switch to login
+          toast.success(`Registration successful! You can now login.`);
+          setIsLogin(true);
+          setRegisterData({ name: "", company_name: "", major: "", industry: "" });
+        }
       }
 
     } catch (error) {
@@ -119,6 +134,7 @@ function Login() {
 
   const handleRegisterRedirect = () => {
     setIsLogin(!isLogin);
+    setTempEmployerData(null); // Reset temp data when switching modes
   };
 
   const updateRegisterData = (field, value) => {
