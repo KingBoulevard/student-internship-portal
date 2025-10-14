@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { authAPI } from "../services/api";
@@ -14,11 +14,16 @@ function Login() {
     major: "",
     industry: ""
   });
-  const [tempEmployerData, setTempEmployerData] = useState(null); // Store employer data temporarily
   const navigate = useNavigate();
+
+  // 🎯 Refs to prevent rapid state updates
+  const lastEmailUpdate = useRef(0);
+  const lastPasswordUpdate = useRef(0);
 
   // Smart user type detection based on email
   const detectUserType = (email) => {
+    if (!email.includes('@')) return 'employer';
+    
     const emailDomain = email.toLowerCase().split('@')[1];
     
     const studentDomains = [
@@ -41,6 +46,33 @@ function Login() {
     }
     
     return 'employer';
+  };
+
+  // 🎯 Debounced input handlers to prevent rapid updates
+  const handleEmailChange = (e) => {
+    const now = Date.now();
+    if (now - lastEmailUpdate.current < 30) { // 30ms threshold
+      return; // Skip rapid updates
+    }
+    lastEmailUpdate.current = now;
+    setEmail(e.target.value);
+  };
+
+  const handlePasswordChange = (e) => {
+    const now = Date.now();
+    if (now - lastPasswordUpdate.current < 30) {
+      return;
+    }
+    lastPasswordUpdate.current = now;
+    setPassword(e.target.value);
+  };
+
+  // 🎯 Safe registration data update
+  const updateRegisterData = (field, value) => {
+    setRegisterData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
   const handleLogin = async () => {
@@ -102,17 +134,9 @@ function Login() {
         const userType = detectUserType(email);
         
         if (userType === 'employer') {
-          // 🎯 NEW: Store temporary employer data and redirect to additional details
-          setTempEmployerData({
-            email: email,
-            company_name: registerData.company_name,
-            industry: registerData.industry,
-            userId: response.id // From registration response
-          });
-          
+          // 🎯 CHANGED: No longer storing temp data, just redirect
           toast.success("Account created! Please complete your company profile.");
           
-          // Navigate to additional details page instead of login
           setTimeout(() => {
             navigate("/employer/additional-details");
           }, 1500);
@@ -134,14 +158,15 @@ function Login() {
 
   const handleRegisterRedirect = () => {
     setIsLogin(!isLogin);
-    setTempEmployerData(null); // Reset temp data when switching modes
+    // 🎯 CHANGED: No need to reset tempEmployerData since it's removed
   };
 
-  const updateRegisterData = (field, value) => {
-    setRegisterData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  // 🎯 Safe key handler - minimal and safe
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !loading) {
+      handleLogin();
+    }
+    // Let backspace/delete work naturally without interference
   };
 
   // Get detected user type for display
@@ -151,7 +176,7 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">
-          {isLogin ? 'Login to Internship Portal' : 'Create Account'}
+          {isLogin ? 'Login to the Internship Portal' : 'Create Account'}
         </h1>
 
         {/* User Type Detection Info */}
@@ -170,20 +195,26 @@ function Login() {
         )}
 
         <div className="space-y-4">
+          {/* 🎯 EMAIL INPUT with debounced handler */}
           <input
             type="email"
             placeholder="Email address"
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={handleEmailChange}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
           />
 
+          {/* 🎯 PASSWORD INPUT with debounced handler */}
           <input
             type="password"
             placeholder="Password"
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={handlePasswordChange}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
           />
 
           {/* Registration Fields */}
@@ -194,16 +225,20 @@ function Login() {
                   <input
                     type="text"
                     placeholder="Full Name"
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={registerData.name}
                     onChange={(e) => updateRegisterData('name', e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={loading}
                   />
                   <input
                     type="text"
                     placeholder="Major"
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={registerData.major}
                     onChange={(e) => updateRegisterData('major', e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={loading}
                   />
                 </>
               )}
@@ -213,16 +248,20 @@ function Login() {
                   <input
                     type="text"
                     placeholder="Company Name"
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={registerData.company_name}
                     onChange={(e) => updateRegisterData('company_name', e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={loading}
                   />
                   <input
                     type="text"
                     placeholder="Industry"
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={registerData.industry}
                     onChange={(e) => updateRegisterData('industry', e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    disabled={loading}
                   />
                 </>
               )}
@@ -232,7 +271,7 @@ function Login() {
           <button
             onClick={handleLogin}
             disabled={loading}
-            className={`w-full p-2 rounded ${
+            className={`w-full p-2 rounded transition-colors ${
               loading 
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : 'bg-blue-600 hover:bg-blue-700'
@@ -243,7 +282,8 @@ function Login() {
 
           <button
             onClick={handleRegisterRedirect}
-            className="w-full text-sm text-blue-600 underline mt-2"
+            disabled={loading}
+            className="w-full text-sm text-blue-600 underline mt-2 disabled:text-gray-400"
           >
             {isLogin ? "Don't have an account? Register here" : "Already have an account? Login here"}
           </button>

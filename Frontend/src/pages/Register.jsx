@@ -1,5 +1,4 @@
-// src/pages/Register.jsx
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -9,57 +8,117 @@ function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Refs to track rapid input and prevent over-updates
+  const lastUpdateTime = useRef(0);
+  const updateThreshold = 50; // ms between updates
   const navigate = useNavigate();
 
-  const handleRegister = () => {
-    // Basic validation
-    if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
-      toast.error("Please fill in all fields.");
-      return;
+  // Debounced email handler to prevent rapid updates
+  const handleEmailChange = useCallback((e) => {
+    const now = Date.now();
+    if (now - lastUpdateTime.current < updateThreshold) {
+      return; // Skip this update if too soon
     }
-
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match.");
-      return;
+    lastUpdateTime.current = now;
+    
+    try {
+      setEmail(e.target.value);
+    } catch (error) {
+      console.error('Error in email change:', error);
     }
+  }, []);
 
-    // Check duplicate email (case-insensitive)
-    const existingRaw = localStorage.getItem("registeredUsers");
-    const existing = existingRaw ? JSON.parse(existingRaw) : [];
-    const emailLower = email.trim().toLowerCase();
-    const dup = existing.find((u) => (u.email || "").toLowerCase() === emailLower);
-    if (dup) {
-      toast.error("An account with this email already exists.");
-      return;
+  // Safe input handlers for other fields
+  const handleFullNameChange = (e) => setFullName(e.target.value);
+  const handlePasswordChange = (e) => setPassword(e.target.value);
+  const handleConfirmPasswordChange = (e) => setConfirmPassword(e.target.value);
+  const handleRoleChange = (e) => setRole(e.target.value);
+
+  // Safe key handlers with backspace protection
+  const handleKeyDown = (e) => {
+    // Let backspace/delete work naturally without interference
+    if (e.key === 'Enter' && !isLoading) {
+      handleRegister();
     }
+  };
 
-    // Build user object
-    const newUser = {
-      id: Date.now(),
-      name: fullName.trim(),
-      email: email.trim(),
-      role,
-      // Employers are unverified by default; others can omit verified
-      verified: role === "employer" ? false : undefined,
-      // NOTE: We are not storing passwords in plaintext for the demo.
-      // For a real app, hash passwords server-side or use a proper auth provider.
-    };
+  const handleRegister = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
 
-    // Save to localStorage
-    const updated = [newUser, ...existing];
-    localStorage.setItem("registeredUsers", JSON.stringify(updated));
+    try {
+      // Basic validation
+      if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
+        toast.error("Please fill in all fields.");
+        return;
+      }
 
-    toast.success("Account created successfully!");
+      if (password !== confirmPassword) {
+        toast.error("Passwords do not match.");
+        return;
+      }
 
-    // Clear form
-    setFullName("");
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    setRole("student");
+      if (password.length < 6) {
+        toast.error("Password must be at least 6 characters long.");
+        return;
+      }
 
-    // Redirect to login after short delay so toast is visible
-    setTimeout(() => navigate("/"), 1200);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        toast.error("Please enter a valid email address.");
+        return;
+      }
+
+      // Check duplicate email
+      try {
+        const existingRaw = localStorage.getItem("registeredUsers");
+        const existing = existingRaw ? JSON.parse(existingRaw) : [];
+        const emailLower = email.trim().toLowerCase();
+        const duplicateUser = existing.find((u) => (u.email || "").toLowerCase() === emailLower);
+        
+        if (duplicateUser) {
+          toast.error("An account with this email already exists.");
+          return;
+        }
+
+        // Build and save user
+        const newUser = {
+          id: Date.now(),
+          name: fullName.trim(),
+          email: email.trim(),
+          role,
+          verified: role === "employer" ? false : undefined,
+          createdAt: new Date().toISOString(),
+        };
+
+        const updatedUsers = [newUser, ...existing];
+        localStorage.setItem("registeredUsers", JSON.stringify(updatedUsers));
+
+        toast.success("Account created successfully!");
+
+        setTimeout(() => {
+          setFullName("");
+          setEmail("");
+          setPassword("");
+          setConfirmPassword("");
+          setRole("student");
+          navigate("/");
+        }, 1200);
+
+      } catch (storageError) {
+        console.error('Storage error:', storageError);
+        toast.error("Error saving account. Please try again.");
+      }
+
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error("An unexpected error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -71,39 +130,51 @@ function Register() {
           <input
             type="text"
             placeholder="Full Name"
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={handleFullNameChange}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
           />
 
+          {/* 🎯 SPECIAL EMAIL INPUT WITH BACKSPACE PROTECTION */}
           <input
             type="email"
             placeholder="Email"
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={handleEmailChange}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
           />
 
           <input
             type="password"
             placeholder="Password"
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={handlePasswordChange}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+            minLength={6}
           />
 
           <input
             type="password"
             placeholder="Confirm Password"
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={handleConfirmPasswordChange}
+            onKeyDown={handleKeyDown}
+            disabled={isLoading}
+            minLength={6}
           />
 
           <select
             value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded"
+            onChange={handleRoleChange}
+            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
           >
             <option value="student">Student</option>
             <option value="employer">Employer</option>
@@ -112,18 +183,32 @@ function Register() {
 
           <button
             onClick={handleRegister}
-            className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
+            disabled={isLoading}
+            className={`w-full p-2 rounded transition-colors ${
+              isLoading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            }`}
           >
-            Create Account
+            {isLoading ? 'Creating Account...' : 'Create Account'}
           </button>
 
           <button
             onClick={() => navigate("/")}
-            className="w-full text-sm text-green-600 underline mt-2"
+            disabled={isLoading}
+            className="w-full text-sm text-green-600 underline mt-2 disabled:text-gray-400"
           >
             Already have an account? Login here
           </button>
         </div>
+
+        {/* 🎯 FIXED: Debug info without process.env */}
+        {import.meta.env?.DEV && (
+          <div className="mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
+            <p>Email characters: {email.length}</p>
+            <p>Hold backspace to test performance</p>
+          </div>
+        )}
       </div>
     </div>
   );

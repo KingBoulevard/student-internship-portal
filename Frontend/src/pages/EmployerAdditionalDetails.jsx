@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate} from "react-router-dom";
 import toast from "react-hot-toast";
 import { authAPI } from "../services/api";
 
 function EmployerAdditionalDetails() {
   const navigate = useNavigate();
-  const location = useLocation();
   
   const [formData, setFormData] = useState({
     company_size: "",
