@@ -1,3 +1,4 @@
+// src/pages/Register.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -11,8 +12,8 @@ function Register() {
   const navigate = useNavigate();
 
   const handleRegister = () => {
-    // Validation
-    if (!fullName || !email || !password || !confirmPassword) {
+    // Basic validation
+    if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
       toast.error("Please fill in all fields.");
       return;
     }
@@ -22,12 +23,43 @@ function Register() {
       return;
     }
 
-    // Simulate account creation
+    // Check duplicate email (case-insensitive)
+    const existingRaw = localStorage.getItem("registeredUsers");
+    const existing = existingRaw ? JSON.parse(existingRaw) : [];
+    const emailLower = email.trim().toLowerCase();
+    const dup = existing.find((u) => (u.email || "").toLowerCase() === emailLower);
+    if (dup) {
+      toast.error("An account with this email already exists.");
+      return;
+    }
+
+    // Build user object
+    const newUser = {
+      id: Date.now(),
+      name: fullName.trim(),
+      email: email.trim(),
+      role,
+      // Employers are unverified by default; others can omit verified
+      verified: role === "employer" ? false : undefined,
+      // NOTE: We are not storing passwords in plaintext for the demo.
+      // For a real app, hash passwords server-side or use a proper auth provider.
+    };
+
+    // Save to localStorage
+    const updated = [newUser, ...existing];
+    localStorage.setItem("registeredUsers", JSON.stringify(updated));
+
     toast.success("Account created successfully!");
 
-    setTimeout(() => {
-      navigate("/");
-    }, 1500);
+    // Clear form
+    setFullName("");
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setRole("student");
+
+    // Redirect to login after short delay so toast is visible
+    setTimeout(() => navigate("/"), 1200);
   };
 
   return (
@@ -75,6 +107,7 @@ function Register() {
           >
             <option value="student">Student</option>
             <option value="employer">Employer</option>
+            <option value="admin">Admin</option>
           </select>
 
           <button
