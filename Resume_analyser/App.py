@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import os, datetime
 import pymysql
 from resume_parser import parse_resume, calculate_score, recommend_courses, recommend_skills
 from dotenv import load_dotenv
+from typing import Dict, List, Tuple, Any  # NEW: For type hints
 
 app = Flask(__name__)
 app.secret_key = "dev_secret_key"  # simple hardcoded key for school project
@@ -24,7 +25,6 @@ connection = pymysql.connect(
     database=os.getenv("DB_NAME")
 )
 cursor = connection.cursor()
-
 
 cursor.execute("CREATE DATABASE IF NOT EXISTS cv;")
 cursor.execute("""
@@ -65,61 +65,81 @@ def index():
         selected_jd=""
     )
 
+
 @app.route("/upload", methods=["POST"])
 def upload():
+    # Initialize variables with defaults
+    resume_data: Dict[str, Any] = {"name": "Unknown", "email": "Unknown", "mobile": "Unknown", "skills": [], "pages": 0, "text": ""}
+    score: int = 0
+    field: str = ""
+    courses: List[Tuple[str, str]] = []
+    recommended_skills: List[str] = []
+    user_level: str = "Beginner"
+    jd_text: str = request.form.get("jd_text", "")
+    save_path: str = ""
+
     if "resume" not in request.files:
-        return "No file uploaded", 400
+        flash("No file uploaded", "error")
+        return render_template(
+            "index.html", 
+            job_descriptions=JOB_DESCRIPTIONS,
+            selected_jd=jd_text
+        )
+
     file = request.files["resume"]
-    jd_text = request.form.get("jd_text", "")
     save_path = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(save_path)
 
-    # --- Parse resume ---
-    resume_data = parse_resume(save_path)
+    try:
+        # Parse resume
+        resume_data = parse_resume(save_path)
 
-    # --- Score resume (JD-aware) ---
-    score = calculate_score(resume_data["text"], jd_text, resume_data["skills"])
+        # Score resume (JD-aware)
+        score = calculate_score(resume_data["text"], jd_text, resume_data["skills"])
 
-    # --- Recommend field & courses ---
-    field, courses = recommend_courses(resume_data["skills"])
+        # Recommend field & courses
+        field, courses = recommend_courses(resume_data["skills"])
 
-    # --- Recommend missing core skills ---
-    recommended_skills = recommend_skills(resume_data["skills"], jd_text)
+        # Recommend missing core skills
+        recommended_skills = recommend_skills(resume_data["skills"], jd_text)
 
-    # --- Determine User Level ---
-    if score >= 80:
-        user_level = "Advanced"
-    elif score >= 50:
-        user_level = "Intermediate"
-    else:
-        user_level = "Beginner"
+        # Determine User Level
+        user_level = "Advanced" if score >= 80 else "Intermediate" if score >= 50 else "Beginner"
 
-    # --- Prevent duplicate by email ---
-    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute("SELECT * FROM user_data WHERE Email=%s", (resume_data["email"],))
-    existing = cursor.fetchone()
+        # Prevent duplicate by email and job description
+        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("SELECT * FROM user_data WHERE Email=%s AND Job_Description=%s", 
+                      (resume_data["email"].lower(), jd_text))
+        existing = cursor.fetchone()
 
-    if not existing:
-        cursor.execute("""
-        INSERT INTO user_data 
-        (Name, Email, Resume_Score, Timestamp, Page_No, Predicted_Field, Job_Description, User_Level, Skills, Recommended_Skills)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        """, (
-            resume_data["name"], 
-            resume_data["email"], 
-            score, 
-            ts, 
-            resume_data["pages"], 
-            field,            
-            jd_text,          
-            user_level,
-            ", ".join(resume_data["skills"]), 
-            ", ".join(recommended_skills)
-        ))
-        connection.commit()
-        flash("Resume uploaded successfully!", "success")
-    else:
-        flash("This email has already submitted a resume. Duplicate prevented.", "warning")
+        if not existing:
+            cursor.execute("""
+            INSERT INTO user_data 
+            (Name, Email, Resume_Score, Timestamp, Page_No, Predicted_Field, Job_Description, User_Level, Skills, Recommended_Skills)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                resume_data["name"], 
+                resume_data["email"].lower(),
+                score, 
+                ts, 
+                resume_data["pages"], 
+                field,            
+                jd_text,          
+                user_level,
+                ", ".join(resume_data["skills"]), 
+                ", ".join(recommended_skills)
+            ))
+            connection.commit()
+            flash("Resume uploaded successfully!", "success")
+        else:
+            flash(f"This email has already submitted a resume for {jd_text}. Duplicate prevented.", "warning")
+
+    except Exception as e:
+        flash(f"Error processing resume: {str(e)}", "error")
+        print(f"Upload error: {e}")  # Debug
+    finally:
+        if save_path and os.path.exists(save_path):
+            os.remove(save_path)  # Clean up uploaded file
 
     return render_template(
         "index.html", 
@@ -152,6 +172,4 @@ def admin():
     )
 
 if __name__ == "__main__":
-    import webbrowser
-    webbrowser.open("http://127.0.0.1:5000/")
     app.run(debug=True)
