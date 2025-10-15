@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import EmployerLayout from "../layouts/EmployerLayout";
+import EmployerLayout from "../../layouts/EmployerLayout";
 
 function PostedJobs() {
   const [jobs, setJobs] = useState([]);

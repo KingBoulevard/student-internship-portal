@@ -5,15 +5,20 @@ import { useState, useEffect } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
-import StudentDashboard from "./pages/StudentDashboard";
-import StudentJobs from "./pages/StudentJobs";
-import StudentApplications from "./pages/StudentApplications";
+import StudentDashboard from "./pages/students/StudentDashboard";
+import StudentJobs from "./pages/students/StudentJobs";
+import StudentApplications from "./pages/students/StudentApplications";
 
-import EmployerDashboard from "./pages/EmployerDashboard";
+import EmployerDashboard from "./pages/employers/EmployerDashboard";
+import PostJob from './pages/employers/PostJob';
+import PostedJobs from './pages/employers/PostedJobs';
+import EmployerAdditionalDetails from "./pages/employers/EmployerAdditionalDetails";
+
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminJobs from "./pages/admin/AdminJobs";
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedUserTypes = [] }) => {
@@ -45,7 +50,7 @@ const PublicRoute = ({ children }) => {
       case 'student':
         return <Navigate to="/student" replace />;
       case 'employer':
-        return <Navigate to="/employer" replace />;
+        return <Navigate to="/employers" replace />;
       case 'admin':
         return <Navigate to="/admin/dashboard" replace />;
       default:
@@ -57,6 +62,22 @@ const PublicRoute = ({ children }) => {
 };
 
 function App() {
+
+  useEffect(() => {
+    // Global error handler
+    const handleError = (error) => {
+      console.error('Global error caught:', error);
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleError);
+
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
+    };
+  }, []);
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
@@ -105,7 +126,7 @@ function App() {
 
           {/* Student routes - protected and only for students */}
           <Route 
-            path="/student" 
+            path="/students" 
             element={
               <ProtectedRoute allowedUserTypes={['student']}>
                 <StudentDashboard />
@@ -131,12 +152,45 @@ function App() {
 
           {/* Employer routes - protected and only for employers */}
           <Route 
-            path="/employer/*" 
+            path="/employers" 
             element={
               <ProtectedRoute allowedUserTypes={['employer']}>
                 <EmployerDashboard />
               </ProtectedRoute>
             } 
+          />
+
+          <Route 
+            path="/employers/dashboard" 
+            element={
+              <ProtectedRoute allowedUserTypes={['employer']}>
+                <EmployerDashboard />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/employers/post-job" 
+            element={
+              <ProtectedRoute allowedUserTypes={['employer']}>
+                <PostJob />
+              </ProtectedRoute>
+            } 
+          />
+  
+          <Route 
+            path="/employers/jobs" 
+            element={
+              <ProtectedRoute allowedUserTypes={['employer']}>
+                <PostedJobs />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Employer additional details route (should be accessible without full auth) */}
+          <Route 
+            path="/employer/additional-details" 
+            element={<EmployerAdditionalDetails />} 
           />
 
           {/* Admin routes - protected and only for admins */}

@@ -1,5 +1,5 @@
-import DashboardLayout from "../layouts/DashboardLayout";
-import { useApplications } from "../context/ApplicationContext";
+import DashboardLayout from "../../layouts/DashboardLayout";
+import { useApplications } from "../../context/ApplicationContext";
 
 function Applications() {
   const { appliedJobs } = useApplications();

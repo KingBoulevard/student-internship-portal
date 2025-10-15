@@ -1,5 +1,5 @@
 import { useState } from "react";
-import EmployerLayout from "../layouts/EmployerLayout";
+import EmployerLayout from "../../layouts/EmployerLayout";
 import toast from "react-hot-toast";
 
 function PostJob() {

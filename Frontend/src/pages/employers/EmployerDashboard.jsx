@@ -1,7 +1,6 @@
 import { Routes, Route } from "react-router-dom";
-import PostJob from "./PostJob";
-import PostedJobs from "./PostedJobs";
-import EmployerLayout from "../layouts/EmployerLayout";
+import PostJob from "../employers/PostJob";
+import PostedJobs from "../employers/PostedJobs";
 
 function EmployerDashboard() {
   const handlePost = (job) => {

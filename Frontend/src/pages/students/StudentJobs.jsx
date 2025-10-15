@@ -1,5 +1,5 @@
-import DashboardLayout from "../layouts/DashboardLayout";
-import { useApplications } from "../context/ApplicationContext";
+import DashboardLayout from "../../layouts/DashboardLayout";
+import { useApplications } from "../../context/ApplicationContext";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 

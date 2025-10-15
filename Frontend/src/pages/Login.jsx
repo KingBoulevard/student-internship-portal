@@ -51,8 +51,8 @@ function Login() {
   // 🎯 Debounced input handlers to prevent rapid updates
   const handleEmailChange = (e) => {
     const now = Date.now();
-    if (now - lastEmailUpdate.current < 30) { // 30ms threshold
-      return; // Skip rapid updates
+    if (now - lastEmailUpdate.current < 30) {
+      return;
     }
     lastEmailUpdate.current = now;
     setEmail(e.target.value);
@@ -67,7 +67,6 @@ function Login() {
     setPassword(e.target.value);
   };
 
-  // 🎯 Safe registration data update
   const updateRegisterData = (field, value) => {
     setRegisterData(prev => ({
       ...prev,
@@ -107,7 +106,7 @@ function Login() {
       }
 
       if (isLogin) {
-        // Store authentication data
+        // 🎯 LOGIN SUCCESS - Store auth data and redirect to dashboard
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
         localStorage.setItem('userType', response.userType);
@@ -118,10 +117,10 @@ function Login() {
         setTimeout(() => {
           switch (response.userType) {
             case 'student':
-              navigate("/student");
+              navigate("/students/student");
               break;
             case 'employer':
-              navigate("/EmployerDashboard");
+              navigate("/employers/EmployerDashboard");
               break;
             case 'admin':
               navigate("/admin/dashboard");
@@ -131,21 +130,37 @@ function Login() {
           }
         }, 1200);
       } else {
+        // 🎯 REGISTRATION SUCCESS - Handle based on user type
         const userType = detectUserType(email);
         
         if (userType === 'employer') {
-          // 🎯 CHANGED: No longer storing temp data, just redirect
+          // 🎯 EMPLOYER REGISTRATION - Store data and redirect to additional details
+          const employerRegistrationData = {
+            email: email,
+            company_name: registerData.company_name,
+            industry: registerData.industry,
+            userId: response.id || response.userId, // Use whatever your backend returns
+            token: response.token // Store token if provided
+          };
+          
+          // Store in localStorage for the additional details page
+          localStorage.setItem('employerRegistrationData', JSON.stringify(employerRegistrationData));
+          
           toast.success("Account created! Please complete your company profile.");
           
+          // Redirect to additional details page
           setTimeout(() => {
-            navigate("/employer/additional-details");
+            navigate("/pages/employers/EmployerAdditionalDetails");
           }, 1500);
           
         } else {
-          // For students/admins, show success and switch to login
+          // 🎯 STUDENT/ADMIN REGISTRATION - Show success and switch to login
           toast.success(`Registration successful! You can now login.`);
           setIsLogin(true);
+          // Clear form
           setRegisterData({ name: "", company_name: "", major: "", industry: "" });
+          setEmail("");
+          setPassword("");
         }
       }
 
@@ -158,15 +173,19 @@ function Login() {
 
   const handleRegisterRedirect = () => {
     setIsLogin(!isLogin);
-    // 🎯 CHANGED: No need to reset tempEmployerData since it's removed
+    // Clear form when switching modes
+    if (!isLogin) {
+      setRegisterData({ name: "", company_name: "", major: "", industry: "" });
+      setEmail("");
+      setPassword("");
+    }
   };
 
-  // 🎯 Safe key handler - minimal and safe
+  // Safe key handler
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !loading) {
       handleLogin();
     }
-    // Let backspace/delete work naturally without interference
   };
 
   // Get detected user type for display
@@ -176,7 +195,7 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-8 rounded shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center">
-          {isLogin ? 'Login to the Internship Portal' : 'Create Account'}
+          {isLogin ? 'Login to Internship Portal' : 'Create Account'}
         </h1>
 
         {/* User Type Detection Info */}
@@ -195,7 +214,6 @@ function Login() {
         )}
 
         <div className="space-y-4">
-          {/* 🎯 EMAIL INPUT with debounced handler */}
           <input
             type="email"
             placeholder="Email address"
@@ -206,7 +224,6 @@ function Login() {
             disabled={loading}
           />
 
-          {/* 🎯 PASSWORD INPUT with debounced handler */}
           <input
             type="password"
             placeholder="Password"

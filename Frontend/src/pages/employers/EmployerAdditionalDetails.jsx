@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate} from "react-router-dom";
 import toast from "react-hot-toast";
-import { authAPI } from "../services/api";
+import { authAPI } from "../../services/api";
 
 function EmployerAdditionalDetails() {
   const navigate = useNavigate();
@@ -18,10 +18,16 @@ function EmployerAdditionalDetails() {
   const [employerData, setEmployerData] = useState(null);
 
   useEffect(() => {
-    // Check if we have employer data (you might want to use context or localStorage)
-    const storedData = localStorage.getItem('tempEmployerData');
+    // 🎯 Get employer data from localStorage (set during registration)
+    const storedData = localStorage.getItem('employerRegistrationData');
     if (storedData) {
-      setEmployerData(JSON.parse(storedData));
+      const parsedData = JSON.parse(storedData);
+      setEmployerData(parsedData);
+      
+      // 🎯 If we have a token from registration, set it
+      if (parsedData.token) {
+        localStorage.setItem('token', parsedData.token);
+      }
     } else {
       // If no data, redirect back to registration
       toast.error("Please complete registration first");
@@ -76,9 +82,8 @@ function EmployerAdditionalDetails() {
   };
 
   const handleSkip = () => {
-    // Allow skipping for now
     toast.success("You can update these details later in your profile");
-    localStorage.removeItem('tempEmployerData');
+    localStorage.removeItem('employerRegistrationData');
     navigate("/EmployerDashboard");
   };
 
