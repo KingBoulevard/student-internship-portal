@@ -12,6 +12,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { saveAs } from "file-saver";
+import Papa from "papaparse";
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState({
@@ -24,6 +26,7 @@ export default function AdminDashboard() {
   const [roleData, setRoleData] = useState([]);
   const [verificationData, setVerificationData] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
+  const [data, setData] = useState({ users: [], jobs: [], applications: [] });
 
   useEffect(() => {
     const refresh = () => {
@@ -66,7 +69,10 @@ export default function AdminDashboard() {
         { name: "Unverified", value: Math.max(employers - verifiedEmployers, 0) },
       ]);
 
-      // Simulate activity log from localStorage data
+      // Save all data for export
+      setData({ users, jobs, applications: apps });
+
+      // Simulated activity log
       const log = [];
 
       users.slice(-5).forEach((u) => {
@@ -96,12 +102,10 @@ export default function AdminDashboard() {
         });
       });
 
-      // Sort by most recent first
       setActivityLog(log.reverse());
     };
 
     refresh();
-
     const onStorage = (e) => {
       if (["registeredUsers", "employerJobs", "appliedJobs"].includes(e.key))
         refresh();
@@ -111,6 +115,23 @@ export default function AdminDashboard() {
   }, []);
 
   const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444"];
+
+  // Export Function
+  const exportCSV = (type) => {
+    let dataset = [];
+    if (type === "users") dataset = data.users;
+    if (type === "jobs") dataset = data.jobs;
+    if (type === "applications") dataset = data.applications;
+
+    if (!dataset.length) {
+      alert(`No ${type} data to export.`);
+      return;
+    }
+
+    const csv = Papa.unparse(dataset);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, `${type}_report_${new Date().toISOString().slice(0, 10)}.csv`);
+  };
 
   return (
     <div className="p-4">
@@ -206,7 +227,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Activity Log */}
-      <div className="bg-white p-4 rounded shadow border">
+      <div className="bg-white p-4 rounded shadow border mb-10">
         <h2 className="font-semibold mb-4">Recent Activity</h2>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -227,10 +248,7 @@ export default function AdminDashboard() {
                 </tr>
               ) : (
                 activityLog.map((log, i) => (
-                  <tr
-                    key={i}
-                    className="border-b hover:bg-gray-50 transition-colors duration-150"
-                  >
+                  <tr key={i} className="border-b hover:bg-gray-50 transition-colors duration-150">
                     <td className="p-2 text-gray-500">{log.time}</td>
                     <td className="p-2 font-semibold">{log.type}</td>
                     <td className="p-2">{log.detail}</td>
@@ -252,6 +270,32 @@ export default function AdminDashboard() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Export Section */}
+      <div className="bg-white p-6 rounded shadow border text-center">
+        <h2 className="font-semibold mb-4">Export Data Reports</h2>
+        <p className="text-gray-600 mb-4">Download system data for offline reporting or documentation.</p>
+        <div className="flex flex-wrap justify-center gap-4">
+          <button
+            onClick={() => exportCSV("users")}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+          >
+            Export Users
+          </button>
+          <button
+            onClick={() => exportCSV("jobs")}
+            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Export Jobs
+          </button>
+          <button
+            onClick={() => exportCSV("applications")}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+          >
+            Export Applications
+          </button>
         </div>
       </div>
     </div>
