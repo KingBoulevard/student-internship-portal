@@ -1,0 +1,6 @@
+Flask==2.3.3
+pymysql==1.1.1
+pandas==2.1.1
+pdfminer.six==20221105
+spacy==3.6.1
+python-dotenv==1.0.1
