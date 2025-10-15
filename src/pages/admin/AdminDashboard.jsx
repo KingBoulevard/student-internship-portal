@@ -23,6 +23,7 @@ export default function AdminDashboard() {
 
   const [roleData, setRoleData] = useState([]);
   const [verificationData, setVerificationData] = useState([]);
+  const [activityLog, setActivityLog] = useState([]);
 
   useEffect(() => {
     const refresh = () => {
@@ -64,6 +65,39 @@ export default function AdminDashboard() {
         { name: "Verified", value: verifiedEmployers },
         { name: "Unverified", value: Math.max(employers - verifiedEmployers, 0) },
       ]);
+
+      // Simulate activity log from localStorage data
+      const log = [];
+
+      users.slice(-5).forEach((u) => {
+        log.push({
+          type: "User Registration",
+          detail: `${u.name || "Unknown"} registered as ${u.role}`,
+          role: u.role,
+          time: new Date().toLocaleString(),
+        });
+      });
+
+      jobs.slice(-5).forEach((j) => {
+        log.push({
+          type: "Job Posted",
+          detail: `${j.title || "Untitled"} posted by ${j.company || "Unknown"}`,
+          role: "Employer",
+          time: new Date().toLocaleString(),
+        });
+      });
+
+      apps.slice(-5).forEach((a) => {
+        log.push({
+          type: "Application Submitted",
+          detail: `${a.studentName || "A student"} applied for ${a.jobTitle || "a job"}`,
+          role: "Student",
+          time: new Date().toLocaleString(),
+        });
+      });
+
+      // Sort by most recent first
+      setActivityLog(log.reverse());
     };
 
     refresh();
@@ -106,7 +140,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         {/* User Role Distribution */}
         <div className="bg-white p-4 rounded shadow border">
           <h2 className="font-semibold mb-2 text-center">User Role Distribution</h2>
@@ -168,6 +202,56 @@ export default function AdminDashboard() {
               <Legend />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Activity Log */}
+      <div className="bg-white p-4 rounded shadow border">
+        <h2 className="font-semibold mb-4">Recent Activity</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left bg-gray-100">
+                <th className="p-2">Time</th>
+                <th className="p-2">Type</th>
+                <th className="p-2">Detail</th>
+                <th className="p-2">Role</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activityLog.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="text-center p-3 text-gray-500">
+                    No recent activity recorded.
+                  </td>
+                </tr>
+              ) : (
+                activityLog.map((log, i) => (
+                  <tr
+                    key={i}
+                    className="border-b hover:bg-gray-50 transition-colors duration-150"
+                  >
+                    <td className="p-2 text-gray-500">{log.time}</td>
+                    <td className="p-2 font-semibold">{log.type}</td>
+                    <td className="p-2">{log.detail}</td>
+                    <td className="p-2">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          log.role === "Admin"
+                            ? "bg-blue-100 text-blue-700"
+                            : log.role === "Employer"
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {log.role}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
