@@ -14,6 +14,9 @@ import {
 } from "recharts";
 import { saveAs } from "file-saver";
 import Papa from "papaparse";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState({
@@ -132,6 +135,39 @@ export default function AdminDashboard() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     saveAs(blob, `${type}_report_${new Date().toISOString().slice(0, 10)}.csv`);
   };
+
+  const exportPDF = (type) => {
+  let dataset = [];
+  if (type === "users") dataset = data.users;
+  if (type === "jobs") dataset = data.jobs;
+  if (type === "applications") dataset = data.applications;
+
+  if (!dataset.length) {
+    alert(`No ${type} data to export.`);
+    return;
+  }
+
+  const doc = new jsPDF();
+  const date = new Date().toLocaleString();
+  doc.text(`Smart CareerBridge - ${type.toUpperCase()} REPORT`, 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Generated on: ${date}`, 14, 22);
+
+  // Extract table headers and rows dynamically
+  const keys = Object.keys(dataset[0]);
+  const tableData = dataset.map((item) => keys.map((key) => String(item[key] ?? "")));
+
+  doc.autoTable({
+    head: [keys],
+    body: tableData,
+    startY: 30,
+    styles: { fontSize: 9 },
+    headStyles: { fillColor: [59, 130, 246] }, // blue header
+  });
+
+  doc.save(`${type}_report_${new Date().toISOString().slice(0, 10)}.pdf`);
+};
+
 
   return (
     <div className="p-4">
@@ -273,31 +309,54 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Export Section */}
-      <div className="bg-white p-6 rounded shadow border text-center">
-        <h2 className="font-semibold mb-4">Export Data Reports</h2>
-        <p className="text-gray-600 mb-4">Download system data for offline reporting or documentation.</p>
-        <div className="flex flex-wrap justify-center gap-4">
-          <button
-            onClick={() => exportCSV("users")}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Export Users
-          </button>
-          <button
-            onClick={() => exportCSV("jobs")}
-            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-          >
-            Export Jobs
-          </button>
-          <button
-            onClick={() => exportCSV("applications")}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
-          >
-            Export Applications
-          </button>
-        </div>
-      </div>
-    </div>
+     {/* Export Section */}
+<div className="bg-white p-6 rounded shadow border text-center">
+  <h2 className="font-semibold mb-4">Export Data Reports</h2>
+  <p className="text-gray-600 mb-4">
+    Download system data for offline reporting or documentation.
+  </p>
+  <div className="flex flex-wrap justify-center gap-4">
+    {/* CSV Buttons */}
+    <button
+      onClick={() => exportCSV("users")}
+      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+    >
+      Export Users (CSV)
+    </button>
+    <button
+      onClick={() => exportCSV("jobs")}
+      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+    >
+      Export Jobs (CSV)
+    </button>
+    <button
+      onClick={() => exportCSV("applications")}
+      className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
+    >
+      Export Applications (CSV)
+    </button>
+
+    {/* PDF Buttons */}
+    <button
+      onClick={() => exportPDF("users")}
+      className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded"
+    >
+      Export Users (PDF)
+    </button>
+    <button
+      onClick={() => exportPDF("jobs")}
+      className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded"
+    >
+      Export Jobs (PDF)
+    </button>
+    <button
+      onClick={() => exportPDF("applications")}
+      className="bg-yellow-700 hover:bg-yellow-800 text-white px-4 py-2 rounded"
+    >
+      Export Applications (PDF)
+    </button>
+  </div>
+</div>
+</div>
   );
 }
