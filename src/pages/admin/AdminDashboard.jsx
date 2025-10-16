@@ -1,4 +1,3 @@
-// src/pages/admin/AdminDashboard.jsx
 import { useEffect, useState } from "react";
 import {
   PieChart,
@@ -17,7 +16,6 @@ import Papa from "papaparse";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
-
 export default function AdminDashboard() {
   const [summary, setSummary] = useState({
     users: 0,
@@ -30,6 +28,13 @@ export default function AdminDashboard() {
   const [verificationData, setVerificationData] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
   const [data, setData] = useState({ users: [], jobs: [], applications: [] });
+  const [notifications, setNotifications] = useState([]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("isAdminLoggedIn");
+    window.location.href = "/admin-login"; // redirect to your admin login page
+  };
 
   useEffect(() => {
     const refresh = () => {
@@ -44,15 +49,9 @@ export default function AdminDashboard() {
         (u) => (u.role || "").toLowerCase() === "employer" && u.verified === true
       ).length;
 
-      const students = users.filter(
-        (u) => (u.role || "").toLowerCase() === "student"
-      ).length;
-      const employers = users.filter(
-        (u) => (u.role || "").toLowerCase() === "employer"
-      ).length;
-      const admins = users.filter(
-        (u) => (u.role || "").toLowerCase() === "admin"
-      ).length;
+      const students = users.filter((u) => (u.role || "").toLowerCase() === "student").length;
+      const employers = users.filter((u) => (u.role || "").toLowerCase() === "employer").length;
+      const admins = users.filter((u) => (u.role || "").toLowerCase() === "admin").length;
 
       setSummary({
         users: users.length,
@@ -72,291 +71,186 @@ export default function AdminDashboard() {
         { name: "Unverified", value: Math.max(employers - verifiedEmployers, 0) },
       ]);
 
-      // Save all data for export
       setData({ users, jobs, applications: apps });
 
-      // Simulated activity log
       const log = [];
-
-      users.slice(-5).forEach((u) => {
+      users.slice(-5).forEach((u) =>
         log.push({
           type: "User Registration",
           detail: `${u.name || "Unknown"} registered as ${u.role}`,
-          role: u.role,
           time: new Date().toLocaleString(),
-        });
-      });
+        })
+      );
 
-      jobs.slice(-5).forEach((j) => {
+      jobs.slice(-5).forEach((j) =>
         log.push({
           type: "Job Posted",
           detail: `${j.title || "Untitled"} posted by ${j.company || "Unknown"}`,
-          role: "Employer",
           time: new Date().toLocaleString(),
-        });
-      });
+        })
+      );
 
-      apps.slice(-5).forEach((a) => {
+      apps.slice(-5).forEach((a) =>
         log.push({
           type: "Application Submitted",
           detail: `${a.studentName || "A student"} applied for ${a.jobTitle || "a job"}`,
-          role: "Student",
           time: new Date().toLocaleString(),
-        });
-      });
+        })
+      );
 
       setActivityLog(log.reverse());
+
+      const newNotifications = [];
+      if (users.length > 0)
+        newNotifications.push(`🧑‍🎓 ${users.length} total users registered.`);
+      if (jobs.length > 0)
+        newNotifications.push(`💼 ${jobs.length} jobs currently posted.`);
+      if (apps.length > 0)
+        newNotifications.push(`📨 ${apps.length} applications submitted.`);
+      if (verifiedEmployers > 0)
+        newNotifications.push(`✅ ${verifiedEmployers} employers verified.`);
+
+      setNotifications(newNotifications);
     };
 
     refresh();
     const onStorage = (e) => {
-      if (["registeredUsers", "employerJobs", "appliedJobs"].includes(e.key))
-        refresh();
+      if (["registeredUsers", "employerJobs", "appliedJobs"].includes(e.key)) refresh();
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const COLORS = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444"];
-
-  // Export Function
-  const exportCSV = (type) => {
-    let dataset = [];
-    if (type === "users") dataset = data.users;
-    if (type === "jobs") dataset = data.jobs;
-    if (type === "applications") dataset = data.applications;
-
-    if (!dataset.length) {
-      alert(`No ${type} data to export.`);
-      return;
-    }
-
-    const csv = Papa.unparse(dataset);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, `${type}_report_${new Date().toISOString().slice(0, 10)}.csv`);
+  const exportCSV = (key) => {
+    const csv = Papa.unparse(data[key]);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    saveAs(blob, `${key}.csv`);
   };
 
-  const exportPDF = (type) => {
-  let dataset = [];
-  if (type === "users") dataset = data.users;
-  if (type === "jobs") dataset = data.jobs;
-  if (type === "applications") dataset = data.applications;
+  const exportPDF = (key) => {
+    const doc = new jsPDF();
+    const rows = data[key].map((obj) => Object.values(obj));
+    const columns = Object.keys(data[key][0] || {});
+    doc.text(`${key.toUpperCase()} DATA`, 10, 10);
+    doc.autoTable({ head: [columns], body: rows });
+    doc.save(`${key}.pdf`);
+  };
 
-  if (!dataset.length) {
-    alert(`No ${type} data to export.`);
-    return;
-  }
-
-  const doc = new jsPDF();
-  const date = new Date().toLocaleString();
-  doc.text(`Smart CareerBridge - ${type.toUpperCase()} REPORT`, 14, 15);
-  doc.setFontSize(10);
-  doc.text(`Generated on: ${date}`, 14, 22);
-
-  // Extract table headers and rows dynamically
-  const keys = Object.keys(dataset[0]);
-  const tableData = dataset.map((item) => keys.map((key) => String(item[key] ?? "")));
-
-  doc.autoTable({
-    head: [keys],
-    body: tableData,
-    startY: 30,
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [59, 130, 246] }, // blue header
-  });
-
-  doc.save(`${type}_report_${new Date().toISOString().slice(0, 10)}.pdf`);
-};
-
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-6">Admin Overview</h1>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white p-4 rounded shadow border">
-          <p className="text-sm text-gray-500">Total Users</p>
-          <p className="text-2xl font-bold">{summary.users}</p>
-        </div>
-
-        <div className="bg-white p-4 rounded shadow border">
-          <p className="text-sm text-gray-500">Verified Employers</p>
-          <p className="text-2xl font-bold">{summary.verifiedEmployers}</p>
-        </div>
-
-        <div className="bg-white p-4 rounded shadow border">
-          <p className="text-sm text-gray-500">Total Jobs</p>
-          <p className="text-2xl font-bold">{summary.jobs}</p>
-        </div>
-
-        <div className="bg-white p-4 rounded shadow border">
-          <p className="text-sm text-gray-500">Applications</p>
-          <p className="text-2xl font-bold">{summary.applications}</p>
-        </div>
+    <div className="min-h-screen bg-gray-50 text-gray-800">
+      {/* 🔹 Top Navbar */}
+      <div className="w-full bg-cyan-200 text-white flex justify-between items-center px-8 py-4 shadow-md">
+        <h1 className="text-xl font-bold">Welcome</h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-medium transition"
+        >
+          Logout
+        </button>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-        {/* User Role Distribution */}
-        <div className="bg-white p-4 rounded shadow border">
-          <h2 className="font-semibold mb-2 text-center">User Role Distribution</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={roleData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label
-              >
-                {roleData.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+      {/* 🔹 Main Content */}
+      <div className="pt-8 px-8">
+        {/* Notifications */}
+        <div className="bg-white shadow-md p-6 rounded-xl mb-8">
+          <h3 className="text-lg font-semibold mb-3">🔔 Notifications</h3>
+          <ul className="list-disc list-inside space-y-1">
+            {notifications.map((n, i) => (
+              <li key={i}>{n}</li>
+            ))}
+          </ul>
         </div>
 
-        {/* Job vs Applications */}
-        <div className="bg-white p-4 rounded shadow border">
-          <h2 className="font-semibold mb-2 text-center">Jobs vs Applications</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={[{ name: "Stats", Jobs: summary.jobs, Applications: summary.applications }]}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="Jobs" fill="#3b82f6" />
-              <Bar dataKey="Applications" fill="#10b981" />
-            </BarChart>
-          </ResponsiveContainer>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div className="bg-blue-100 p-4 rounded-lg shadow text-center">
+            <h4 className="font-semibold text-blue-800">Users</h4>
+            <p className="text-2xl">{summary.users}</p>
+          </div>
+          <div className="bg-green-100 p-4 rounded-lg shadow text-center">
+            <h4 className="font-semibold text-green-800">Verified Employers</h4>
+            <p className="text-2xl">{summary.verifiedEmployers}</p>
+          </div>
+          <div className="bg-yellow-100 p-4 rounded-lg shadow text-center">
+            <h4 className="font-semibold text-yellow-800">Jobs</h4>
+            <p className="text-2xl">{summary.jobs}</p>
+          </div>
+          <div className="bg-purple-100 p-4 rounded-lg shadow text-center">
+            <h4 className="font-semibold text-purple-800">Applications</h4>
+            <p className="text-2xl">{summary.applications}</p>
+          </div>
         </div>
 
-        {/* Employer Verification */}
-        <div className="bg-white p-4 rounded shadow border">
-          <h2 className="font-semibold mb-2 text-center">Employer Verification Status</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={verificationData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                label
-              >
-                {verificationData.map((entry, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+        {/* Charts Section */}
+        <div className="grid md:grid-cols-2 gap-8 mb-10">
+          <div className="bg-white shadow-md p-6 rounded-xl">
+            <h4 className="font-semibold mb-4">User Roles Distribution</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie data={roleData} dataKey="value" nameKey="name" outerRadius={100} label>
+                  {roleData.map((entry, index) => (
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
-      {/* Activity Log */}
-      <div className="bg-white p-4 rounded shadow border mb-10">
-        <h2 className="font-semibold mb-4">Recent Activity</h2>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="text-left bg-gray-100">
-                <th className="p-2">Time</th>
-                <th className="p-2">Type</th>
-                <th className="p-2">Detail</th>
-                <th className="p-2">Role</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activityLog.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="text-center p-3 text-gray-500">
-                    No recent activity recorded.
-                  </td>
-                </tr>
-              ) : (
-                activityLog.map((log, i) => (
-                  <tr key={i} className="border-b hover:bg-gray-50 transition-colors duration-150">
-                    <td className="p-2 text-gray-500">{log.time}</td>
-                    <td className="p-2 font-semibold">{log.type}</td>
-                    <td className="p-2">{log.detail}</td>
-                    <td className="p-2">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          log.role === "Admin"
-                            ? "bg-blue-100 text-blue-700"
-                            : log.role === "Employer"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {log.role}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+          <div className="bg-white shadow-md p-6 rounded-xl">
+            <h4 className="font-semibold mb-4">Employer Verification</h4>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={verificationData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="value" fill="#4CAF50" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Activity Log */}
+        <div className="bg-white shadow-md p-6 rounded-xl mb-10">
+          <h3 className="text-lg font-semibold mb-3">🕒 Recent Activity</h3>
+          <ul className="space-y-2">
+            {activityLog.map((log, index) => (
+              <li key={index} className="border-b pb-2">
+                <strong>{log.type}:</strong> {log.detail}{" "}
+                <em className="text-gray-500 text-sm">({log.time})</em>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Export Buttons */}
+        <div className="bg-white shadow-md p-6 rounded-xl">
+          <h3 className="text-lg font-semibold mb-4">📤 Export Data</h3>
+          <div className="flex flex-wrap gap-6">
+            {["users", "jobs", "applications"].map((key) => (
+              <div key={key}>
+                <h4 className="font-medium mb-2">{key.toUpperCase()}</h4>
+                <button
+                  onClick={() => exportCSV(key)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg mr-2"
+                >
+                  Export CSV
+                </button>
+                <button
+                  onClick={() => exportPDF(key)}
+                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-lg"
+                >
+                  Export PDF
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-
-     {/* Export Section */}
-<div className="bg-white p-6 rounded shadow border text-center">
-  <h2 className="font-semibold mb-4">Export Data Reports</h2>
-  <p className="text-gray-600 mb-4">
-    Download system data for offline reporting or documentation.
-  </p>
-  <div className="flex flex-wrap justify-center gap-4">
-    {/* CSV Buttons */}
-    <button
-      onClick={() => exportCSV("users")}
-      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
-    >
-      Export Users (CSV)
-    </button>
-    <button
-      onClick={() => exportCSV("jobs")}
-      className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
-    >
-      Export Jobs (CSV)
-    </button>
-    <button
-      onClick={() => exportCSV("applications")}
-      className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded"
-    >
-      Export Applications (CSV)
-    </button>
-
-    {/* PDF Buttons */}
-    <button
-      onClick={() => exportPDF("users")}
-      className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded"
-    >
-      Export Users (PDF)
-    </button>
-    <button
-      onClick={() => exportPDF("jobs")}
-      className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded"
-    >
-      Export Jobs (PDF)
-    </button>
-    <button
-      onClick={() => exportPDF("applications")}
-      className="bg-yellow-700 hover:bg-yellow-800 text-white px-4 py-2 rounded"
-    >
-      Export Applications (PDF)
-    </button>
-  </div>
-</div>
-</div>
+    </div>
   );
 }
