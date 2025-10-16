@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useEffect, useState } from "react";
 import {
   PieChart,
@@ -15,6 +16,10 @@ import { saveAs } from "file-saver";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+=======
+// src/pages/admin/AdminDashboard.jsx
+import { useEffect, useState } from "react";
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a
 
 export default function AdminDashboard() {
   const [summary, setSummary] = useState({
@@ -24,6 +29,7 @@ export default function AdminDashboard() {
     applications: 0,
   });
 
+<<<<<<< HEAD
   const [roleData, setRoleData] = useState([]);
   const [verificationData, setVerificationData] = useState([]);
   const [activityLog, setActivityLog] = useState([]);
@@ -36,6 +42,8 @@ export default function AdminDashboard() {
     window.location.href = "/admin-login"; // redirect to your admin login page
   };
 
+=======
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a
   useEffect(() => {
     const refresh = () => {
       const usersRaw = localStorage.getItem("registeredUsers");
@@ -45,6 +53,7 @@ export default function AdminDashboard() {
       const appsRaw = localStorage.getItem("appliedJobs");
       const apps = appsRaw ? JSON.parse(appsRaw) : [];
 
+<<<<<<< HEAD
       const verifiedEmployers = users.filter(
         (u) => (u.role || "").toLowerCase() === "employer" && u.verified === true
       ).length;
@@ -52,6 +61,9 @@ export default function AdminDashboard() {
       const students = users.filter((u) => (u.role || "").toLowerCase() === "student").length;
       const employers = users.filter((u) => (u.role || "").toLowerCase() === "employer").length;
       const admins = users.filter((u) => (u.role || "").toLowerCase() === "admin").length;
+=======
+      const verifiedEmployers = users.filter((u) => (u.role || "").toLowerCase() === "employer" && u.verified === true).length;
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a
 
       setSummary({
         users: users.length,
@@ -59,6 +71,7 @@ export default function AdminDashboard() {
         jobs: jobs.length,
         applications: Array.isArray(apps) ? apps.length : 0,
       });
+<<<<<<< HEAD
 
       setRoleData([
         { name: "Students", value: students },
@@ -114,6 +127,13 @@ export default function AdminDashboard() {
     };
 
     refresh();
+=======
+    };
+
+    refresh();
+
+    // Keep dashboard live across tabs
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a
     const onStorage = (e) => {
       if (["registeredUsers", "employerJobs", "appliedJobs"].includes(e.key)) refresh();
     };
@@ -121,6 +141,7 @@ export default function AdminDashboard() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+<<<<<<< HEAD
   const exportCSV = (key) => {
     const csv = Papa.unparse(data[key]);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -249,6 +270,31 @@ export default function AdminDashboard() {
               </div>
             ))}
           </div>
+=======
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-6">Admin Overview</h1>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-4 rounded shadow border">
+          <p className="text-sm text-gray-500">Total Users</p>
+          <p className="text-2xl font-bold">{summary.users}</p>
+        </div>
+
+        <div className="bg-white p-4 rounded shadow border">
+          <p className="text-sm text-gray-500">Verified Employers</p>
+          <p className="text-2xl font-bold">{summary.verifiedEmployers}</p>
+        </div>
+
+        <div className="bg-white p-4 rounded shadow border">
+          <p className="text-sm text-gray-500">Total Jobs</p>
+          <p className="text-2xl font-bold">{summary.jobs}</p>
+        </div>
+
+        <div className="bg-white p-4 rounded shadow border">
+          <p className="text-sm text-gray-500">Applications</p>
+          <p className="text-2xl font-bold">{summary.applications}</p>
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a
         </div>
       </div>
     </div>

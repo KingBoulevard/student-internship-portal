@@ -46,8 +46,8 @@
                 <td>{{ row.Page_No }}</td>
                 <td>{{ row.Job_Description }}</td>
                 <td>{{ row.User_Level }}</td>
-                <td>{{ row.Skills }}</td>
-                <td>{{ row.Recommended_Skills }}</td>
+                <td title="{{ row.Skills }}">{{ row.Skills }}</td>
+                <td title="{{ row.Recommended_Skills }}">{{ row.Recommended_Skills }}</td>
             </tr>
             {% endfor %}
         </tbody>
