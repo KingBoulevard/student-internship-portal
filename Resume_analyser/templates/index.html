@@ -6,6 +6,7 @@
 </head>
 <body>
 <div class="container">
+<<<<<<< HEAD
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="flash-messages">
@@ -15,6 +16,17 @@
         </div>
       {% endif %}
     {% endwith %}
+=======
+    <div id="flash-messages" class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a
 
     <div style="display:flex; justify-content:space-between; align-items:center;">
         <h1>Resume Analyzer</h1>
@@ -23,7 +35,11 @@
         </div>
     </div>
 
+<<<<<<< HEAD
     <form action="/upload" method="post" enctype="multipart/form-data">
+=======
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a
         <label>Resume (PDF):</label>
         <input type="file" name="resume" required>
 
@@ -37,6 +53,10 @@
 
         <button type="submit">Analyze</button>
     </form>
+<<<<<<< HEAD
+=======
+    <div id="loading" class="loading-spinner"></div>
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a
 
     {% if result %}
     <div class="results">
@@ -75,5 +95,54 @@
     </div>
     {% endif %}
 </div>
+<<<<<<< HEAD
 </body>
 </html>
+=======
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const flashMessages = document.querySelectorAll(".flash");
+        const flashContainer = document.getElementById("flash-messages");
+
+        // Store new flash messages in sessionStorage
+        if (flashMessages.length > 0) {
+            const messages = Array.from(flashMessages).map(msg => ({
+                text: msg.textContent,
+                class: msg.className
+            }));
+            sessionStorage.setItem("flashMessages", JSON.stringify(messages));
+        } else {
+            // Display stored messages only if no new flash messages exist
+            const storedMessages = sessionStorage.getItem("flashMessages");
+            if (storedMessages) {
+                const messages = JSON.parse(storedMessages);
+                messages.forEach(msg => {
+                    const div = document.createElement("div");
+                    div.className = msg.class;
+                    div.textContent = msg.text;
+                    flashContainer.appendChild(div);
+                });
+                // Clear sessionStorage to prevent duplicate display
+                sessionStorage.removeItem("flashMessages");
+            }
+        }
+
+        // Clear flash messages after 5 seconds
+        if (flashContainer.children.length > 0) {
+            setTimeout(() => {
+                flashContainer.innerHTML = "";
+            }, 5000);
+        }
+
+        // Show loading spinner on form submit
+        const form = document.getElementById("upload-form");
+        const spinner = document.getElementById("loading");
+        form.addEventListener("submit", () => {
+            spinner.style.display = "block";
+        });
+    });
+</script>
+</body>
+</html>
+>>>>>>> 8c0d15186d84ba18239eaceed190694d9f0bed1a

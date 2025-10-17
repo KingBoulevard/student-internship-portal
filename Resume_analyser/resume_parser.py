@@ -1,6 +1,7 @@
 import re
 from pdfminer.high_level import extract_text, extract_pages
 import spacy
+import phonenumbers  # NEW: For robust phone number parsing
 from Courses import ds_course, web_course, android_course, ios_course, uiux_course
 
 # Load spaCy model once
@@ -32,6 +33,19 @@ ALL_SWE_SKILLS = {
     "figma","adobe xd","ui","ux","wireframes","prototyping",
 }
 
+# NEW: Skill variation mappings
+SKILL_VARIATIONS = {
+    "nodejs": "node.js",
+    "reactjs": "react",
+    "nextjs": "next.js",
+    "angularjs": "angular",
+    "vuejs": "vue.js",
+    "springboot": "spring boot",
+    "objective c": "objective-c",
+    "scikit learn": "scikit-learn",
+}
+
+
 # Some soft skills to consider
 SOFT_SKILLS = {
     "teamwork","communication","problem solving","critical thinking","leadership",
@@ -58,6 +72,7 @@ def _extract_lines(text: str):
     return [ln.strip() for ln in text.splitlines() if ln.strip()]
 
 def parse_resume(file_path):
+
     """Extract basic info with better name heuristic + skills including soft skills."""
     text = extract_text(file_path) or ""
     lines = _extract_lines(text)
@@ -82,6 +97,47 @@ def parse_resume(file_path):
         first = lines[0]
         if 1 <= len(first.split()) <= 4 and re.match(r"^[A-Za-z ,.'-]+$", first):
             name = first.title()
+    """Extract basic info with improved name heuristic + skills including soft skills."""
+    try:
+        text = extract_text(file_path) or ""
+    except Exception as e:
+        print(f"PDF parsing error: {e}")
+        return {
+            "name": "Unknown",
+            "email": "Unknown",
+            "mobile": "Unknown",
+            "skills": [],
+            "pages": 0,
+            "text": ""
+        }
+    
+    lines = _extract_lines(text)
+    doc = nlp(text)
+
+    # --- Email ---
+    email_m = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
+    email = email_m.group().lower() if email_m else "Unknown"
+
+    # --- Phone ---
+    mobile = "Unknown"
+    try:
+        for match in phonenumbers.PhoneNumberMatcher(text, "US"):  # Adjust region as needed
+            mobile = phonenumbers.format_number(match.number, phonenumbers.PhoneNumberFormat.E164)
+            break
+    except Exception:
+        pass  # Fallback to "Unknown" if phonenumbers fails
+
+    # --- Name heuristic (check first 5 lines) ---
+    name = None
+    for ent in doc.ents:
+        if ent.label_ == "PERSON" and 2 <= len(ent.text.split()) <= 4:
+            name = ent.text.strip().title()
+            break
+    if not name:
+        for line in lines[:5]:  # Check first 5 lines
+            if 1 <= len(line.split()) <= 4 and re.match(r"^[A-Za-z ,.'-]+$", line):
+                name = line.title()
+                break
     if not name:
         name = "Unknown"
 
@@ -92,6 +148,11 @@ def parse_resume(file_path):
         pattern = r"(?<![A-Za-z0-9])" + re.escape(sk) + r"(?![A-Za-z0-9])"
         if re.search(pattern, lower_text, re.IGNORECASE):
             skills_found.add(sk)
+    # Handle variations
+    for var, canonical in SKILL_VARIATIONS.items():
+        pattern = r"(?<![A-Za-z0-9])" + re.escape(var) + r"(?![A-Za-z0-9])"
+        if re.search(pattern, lower_text, re.IGNORECASE):
+            skills_found.add(canonical)
 
     no_of_pages = len(list(extract_pages(file_path)))
 
@@ -112,6 +173,11 @@ def _skills_from_text(text: str):
         pattern = r"(?<![A-Za-z0-9])" + re.escape(sk) + r"(?![A-Za-z0-9])"
         if re.search(pattern, text_l, re.IGNORECASE):
             found.add(sk)
+
+    for var, canonical in SKILL_VARIATIONS.items():
+        pattern = r"(?<![A-Za-z0-9])" + re.escape(var) + r"(?![A-Za-z0-9])"
+        if re.search(pattern, text_l, re.IGNORECASE):
+            found.add(canonical)
     return found
 
 def calculate_score(resume_text: str, jd_text: str = "", resume_skills=None) -> int:
@@ -122,20 +188,35 @@ def calculate_score(resume_text: str, jd_text: str = "", resume_skills=None) -> 
     jd_points = 0
     if jd_skills:
         core_skills = {s for s in jd_skills if s in CORE_SKILLS_PER_JOB.get(jd_text, jd_skills)}
+        core_skills = CORE_SKILLS_PER_JOB.get(jd_text, jd_skills)  # Use all JD skills if not predefined
         matched_core = len(resume_skills & core_skills)
         matched_other = len(resume_skills & jd_skills) - matched_core
 
         core_score = 50 * (matched_core / max(1, len(core_skills)))
+
         other_score = 30 * (matched_other / max(1, len(jd_skills - core_skills)))
         jd_points = round(core_score + other_score)
     else:
         jd_points = min(80, len(resume_skills) * 4)
+        other_score = 20 * (matched_other / max(1, len(jd_skills - core_skills)))
+        jd_points = round(core_score + other_score)
+        print(f"JD Skills: {jd_skills}, Core: {core_skills}, Matched Core: {matched_core}, Other: {matched_other}")  # Debug
+    else:
+        jd_points = min(90, len(resume_skills) * 3)  # Adjusted cap
+        print(f"No JD, Skills Count: {len(resume_skills)}, JD Points: {jd_points}")  # Debug
 
     lower_resume = _normalize(resume_text)
     struct_hits = sum(1 for s in SECTION_HINTS_GOOD if s in lower_resume)
     struct_points = min(20, struct_hits * 5)
 
     return int(min(100, jd_points + struct_points))
+
+    print(f"Structure Hits: {struct_hits}, Struct Points: {struct_points}")  # Debug
+
+    skill_breadth = min(10, len(resume_skills) * 0.5)  # NEW: 10% for skill count
+    print(f"Skill Breadth Points: {skill_breadth}")  # Debug
+
+    return int(min(100, jd_points + struct_points + skill_breadth))
 
 def recommend_skills(resume_skills, jd_text: str = ""):
     """Recommend missing core skills only for the JD."""
@@ -176,3 +257,5 @@ def recommend_courses(skills):
         return "UI/UX Design", uiux_course
     else:
         return "Software Engineering", web_course
+        return "Software Engineering", web_course
+
