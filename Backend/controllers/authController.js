@@ -42,14 +42,14 @@ const authController = {
             // Find user by email
             user = await userModel.findByEmail(email);
             
-            // If not found in detected type, other types are tried
+            // If not found in detected type, try other types
             if (!user) {
                 const foundUser = await tryAlternativeUserTypes(email, userType);
                 if (foundUser) {
                     // Update userType based on where we found the user
                     userType = foundUser.foundType;
                     userModel = getUserModel(userType);
-                    user = foundUser;
+                    user = foundUser.user;
                 }
             }
 
@@ -77,7 +77,7 @@ const authController = {
                     ...(userType === 'employer' && { company: user.company_name }),
                     ...(userType === 'student' && { studentId: user.student_id })
                 },
-                process.env.JWT_SECRET,
+                process.env.JWT_SECRET || 'fallback-secret-key',
                 { expiresIn: '24h' }
             );
 
@@ -111,7 +111,7 @@ const authController = {
                 return res.status(400).json({ error: 'Email is required' });
             }
 
-            // 🎯 AUTOMATIC USER TYPE DETECTION
+            // AUTOMATIC USER TYPE DETECTION
             const userType = detectUserType(email);
             
             // Validate registration data based on user type
@@ -172,12 +172,7 @@ const authController = {
                 message: error.message,
                 stack: error.stack,
                 userType: req.body?.email ? detectUserType(req.body.email) : 'unknown',
-                receivedData: req.body,
-                modelMethods: {
-                    student: Student ? Object.keys(Student) : 'Model not loaded',
-                    employer: Employer ? Object.keys(Employer) : 'Model not loaded',
-                    admin: Admin ? Object.keys(Admin) : 'Model not loaded'
-                }
+                receivedData: req.body
             });
             res.status(500).json({ 
                 error: 'Registration failed: ' + error.message,
@@ -367,8 +362,7 @@ async function tryAlternativeUserTypes(email, originalType) {
             const userModel = getUserModel(type);
             const user = await userModel.findByEmail(email);
             if (user) {
-                user.foundType = type;
-                return user;
+                return { user, foundType: type };
             }
         }
     }
@@ -411,7 +405,9 @@ function enhanceUserData(userData, userType, email) {
     
     switch (userType) {
         case 'student':
-            enhanced.student_id = generateStudentId(email);
+            if (!enhanced.student_id) {
+                enhanced.student_id = generateStudentId(email);
+            }
             enhanced.is_active = enhanced.is_active !== undefined ? enhanced.is_active : true;
             break;
         case 'employer':

@@ -58,7 +58,6 @@ const studentController = {
                     name: student.name,
                     email: student.email,
                     major: student.major,
-                    gpa: student.gpa
                 }
             });
         } catch (error) {

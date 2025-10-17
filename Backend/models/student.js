@@ -4,14 +4,26 @@ const bcrypt = require('bcryptjs');
 class Student {
     // Create new student WITH PASSWORD HASHING
     static async create(studentData) {
-        const { name, email, password, major, gpa } = studentData;
+        console.log('Student.create received:', studentData);
+        
+        // ✅ FIXED: Destructure ALL required fields including student_id and is_active
+        const { name, email, password, major, student_id, is_active } = studentData;
+        
+        // ✅ Validate required fields
+        if (!name || !email || !password || !major || !student_id) {
+            throw new Error('Missing required fields for student registration');
+        }
         
         // ✅ Hash the password before storing
         const hashedPassword = await bcrypt.hash(password, 12); // 12 salt rounds
         
+        console.log('Executing student insert with:', {
+            name, email, major, student_id, is_active
+        });
+        
         const [result] = await db.execute(
-            'INSERT INTO students (name, email, password, major, gpa) VALUES (?, ?, ?, ?, ?)',
-            [name, email, hashedPassword, major, gpa]  // ✅ Store hashed password
+            'INSERT INTO students (name, email, password, major, student_id, is_active) VALUES (?, ?, ?, ?, ?, ?)',
+            [name, email, hashedPassword, major, student_id, is_active || true]  // ✅ Fixed: 6 values for 6 placeholders
         );
         return result.insertId;
     }
@@ -30,14 +42,14 @@ class Student {
     // Get student without password (for safe data retrieval)
     static async getByIdSafe(id) {
         const [rows] = await db.execute(
-            'SELECT id, name, email, major, gpa, created_at FROM students WHERE id = ?', 
+            'SELECT id, name, email, major, student_id, created_at FROM students WHERE id = ?', 
             [id]
         );
         return rows[0];
     }
 
     // Add these methods to your existing Student model
-   static async findByIdWithPassword(id) {
+    static async findByIdWithPassword(id) {
         const [rows] = await db.execute('SELECT * FROM students WHERE id = ?', [id]);
         return rows[0];
     }
@@ -52,7 +64,7 @@ class Student {
     }
 
     static async update(id, updateData) {
-        const allowedFields = ['name', 'major', 'gpa', 'phone', 'skills'];
+        const allowedFields = ['name', 'major', 'phone', 'skills'];
         const fieldsToUpdate = {};
     
         allowedFields.forEach(field => {

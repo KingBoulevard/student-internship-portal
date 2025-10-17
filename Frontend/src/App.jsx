@@ -8,6 +8,7 @@ import Register from "./pages/Register";
 import StudentDashboard from "./pages/students/StudentDashboard";
 import StudentJobs from "./pages/students/StudentJobs";
 import StudentApplications from "./pages/students/StudentApplications";
+import StudentProfile from "./pages/students/StudentProfile"; // ADD THIS IMPORT
 
 import EmployerDashboard from "./pages/employers/EmployerDashboard";
 import PostJob from './pages/employers/PostJob';
@@ -48,7 +49,7 @@ const PublicRoute = ({ children }) => {
     // Redirect to appropriate dashboard based on user type
     switch (userType) {
       case 'student':
-        return <Navigate to="/student" replace />;
+        return <Navigate to="/students" replace />;
       case 'employer':
         return <Navigate to="/employers" replace />;
       case 'admin':
@@ -134,7 +135,7 @@ function App() {
             } 
           />
           <Route 
-            path="/student/jobs" 
+            path="/students/jobs" 
             element={
               <ProtectedRoute allowedUserTypes={['student']}>
                 <StudentJobs />
@@ -142,10 +143,19 @@ function App() {
             } 
           />
           <Route 
-            path="/student/applications" 
+            path="/students/applications" 
             element={
               <ProtectedRoute allowedUserTypes={['student']}>
                 <StudentApplications />
+              </ProtectedRoute>
+            } 
+          />
+          {/* ADD THIS NEW ROUTE FOR STUDENT PROFILE */}
+          <Route 
+            path="/students/profile" 
+            element={
+              <ProtectedRoute allowedUserTypes={['student']}>
+                <StudentProfile />
               </ProtectedRoute>
             } 
           />
@@ -213,7 +223,7 @@ function App() {
             path="*" 
             element={
               isAuthenticated ? 
-                <Navigate to="/student" replace /> : 
+                <Navigate to="/students" replace /> : 
                 <Navigate to="/" replace />
             } 
           />
