@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Admin Dashboard</h1>
+
+    <a href="{{ url_for('index') }}" class="btn">⬅ Back to Resume Page</a>
+
+    <form method="get" action="{{ url_for('admin') }}">
+        <label>Filter by Job Description:</label>
+        <select name="jd" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for jd in job_descriptions %}
+                <option value="{{ jd }}" {% if jd == selected_jd %}selected{% endif %}>{{ jd }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Resume Score</th>
+                <th>Timestamp</th>
+                <th>Page No</th>
+                <th>Job Description</th>
+                <th>User Level</th>
+                <th>Skills</th>
+                <th>Recommended Skills</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>
+                <td>{{ row.ID }}</td>
+                <td>{{ row.Name }}</td>
+                <td>{{ row.Email }}</td>
+                <td>{{ row.Resume_Score }}</td>
+                <td>{{ row.Timestamp }}</td>
+                <td>{{ row.Page_No }}</td>
+                <td>{{ row.Job_Description }}</td>
+                <td>{{ row.User_Level }}</td>
+                <td title="{{ row.Skills }}">{{ row.Skills }}</td>
+                <td title="{{ row.Recommended_Skills }}">{{ row.Recommended_Skills }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

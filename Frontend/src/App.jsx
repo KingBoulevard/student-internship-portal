@@ -13,58 +13,85 @@ import EmployerDashboard from "./pages/employers/EmployerDashboard";
 import PostJob from './pages/employers/PostJob';
 import PostedJobs from './pages/employers/PostedJobs';
 import EmployerAdditionalDetails from "./pages/employers/EmployerAdditionalDetails";
+import ResumeAnalysis from "./pages/employers/ResumeAnalysis";
 
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminJobs from "./pages/admin/AdminJobs";
 
-
-// Protected Route Component
+// Fixed Protected Route Component
 const ProtectedRoute = ({ children, allowedUserTypes = [] }) => {
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const userType = localStorage.getItem('userType');
-  const token = localStorage.getItem('token');
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [redirectPath, setRedirectPath] = useState("/");
 
-  if (!token || !user) {
-    return <Navigate to="/" replace />;
-  }
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    const userType = localStorage.getItem('userType');
+    const token = localStorage.getItem('token');
 
-  if (allowedUserTypes.length > 0 && !allowedUserTypes.includes(userType)) {
-    toast.error("You don't have permission to access this page.");
-    return <Navigate to="/" replace />;
+    if (!token || !user) {
+      setRedirectPath("/");
+      setShouldRedirect(true);
+      return;
+    }
+
+    if (allowedUserTypes.length > 0 && !allowedUserTypes.includes(userType)) {
+      toast.error("You don't have permission to access this page.");
+      setRedirectPath("/");
+      setShouldRedirect(true);
+      return;
+    }
+
+    setShouldRedirect(false);
+  }, [allowedUserTypes]);
+
+  if (shouldRedirect) {
+    return <Navigate to={redirectPath} replace />;
   }
 
   return children;
 };
 
-// Public Route Component (redirects to dashboard if already logged in)
+// Fixed Public Route Component
 const PublicRoute = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
-  const userType = localStorage.getItem('userType');
-  const token = localStorage.getItem('token');
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const [redirectPath, setRedirectPath] = useState("/");
 
-  if (token && user) {
-    // Redirect to appropriate dashboard based on user type
-    switch (userType) {
-      case 'student':
-        return <Navigate to="/student" replace />;
-      case 'employer':
-        return <Navigate to="/employers" replace />;
-      case 'admin':
-        return <Navigate to="/admin/dashboard" replace />;
-      default:
-        return <Navigate to="/" replace />;
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    const userType = localStorage.getItem('userType');
+    const token = localStorage.getItem('token');
+
+    if (token && user) {
+      switch (userType) {
+        case 'student':
+          setRedirectPath("/students");
+          break;
+        case 'employer':
+          setRedirectPath("/employers");
+          break;
+        case 'admin':
+          setRedirectPath("/admin/dashboard");
+          break;
+        default:
+          setRedirectPath("/");
+      }
+      setShouldRedirect(true);
+    } else {
+      setShouldRedirect(false);
     }
+  }, []);
+
+  if (shouldRedirect) {
+    return <Navigate to={redirectPath} replace />;
   }
 
   return children;
 };
 
 function App() {
-
   useEffect(() => {
-    // Global error handler
     const handleError = (error) => {
       console.error('Global error caught:', error);
     };
@@ -81,7 +108,6 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check authentication status on app load
     const checkAuth = () => {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
@@ -90,7 +116,6 @@ function App() {
 
     checkAuth();
 
-    // Listen for storage changes (logout from other tabs)
     const handleStorageChange = () => {
       checkAuth();
     };
@@ -101,7 +126,6 @@ function App() {
 
   return (
     <>
-      {/* Global toaster */}
       <Toaster position="top-center" />
 
       <Router>
@@ -134,7 +158,7 @@ function App() {
             } 
           />
           <Route 
-            path="/student/jobs" 
+            path="/students/jobs" 
             element={
               <ProtectedRoute allowedUserTypes={['student']}>
                 <StudentJobs />
@@ -142,7 +166,7 @@ function App() {
             } 
           />
           <Route 
-            path="/student/applications" 
+            path="/students/applications" 
             element={
               <ProtectedRoute allowedUserTypes={['student']}>
                 <StudentApplications />
@@ -152,16 +176,7 @@ function App() {
 
           {/* Employer routes - protected and only for employers */}
           <Route 
-            path="/employers" 
-            element={
-              <ProtectedRoute allowedUserTypes={['employer']}>
-                <EmployerDashboard />
-              </ProtectedRoute>
-            } 
-          />
-
-          <Route 
-            path="/employers/dashboard" 
+            path="/employers/*" 
             element={
               <ProtectedRoute allowedUserTypes={['employer']}>
                 <EmployerDashboard />
@@ -189,8 +204,17 @@ function App() {
 
           {/* Employer additional details route (should be accessible without full auth) */}
           <Route 
-            path="/employer/additional-details" 
+            path="/employers/EmployerAdditionalDetails" 
             element={<EmployerAdditionalDetails />} 
+          />
+
+          <Route 
+            path="/employers/ResumeAnalysis" 
+            element={
+              <ProtectedRoute allowedUserTypes={['employer']}>
+                <ResumeAnalysis />
+              </ProtectedRoute>
+            } 
           />
 
           {/* Admin routes - protected and only for admins */}
@@ -202,10 +226,10 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<AdminDashboard />} />          {/* /admin  */}
-            <Route path="dashboard" element={<AdminDashboard />} />{/* /admin/dashboard */}
-            <Route path="users" element={<AdminUsers />} />        {/* /admin/users */}
-            <Route path="jobs" element={<AdminJobs />} />          {/* /admin/jobs */}
+            <Route index element={<AdminDashboard />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="jobs" element={<AdminJobs />} />
           </Route>
 
           {/* Fallback: redirect unknown routes based on auth status */}
@@ -213,7 +237,7 @@ function App() {
             path="*" 
             element={
               isAuthenticated ? 
-                <Navigate to="/student" replace /> : 
+                <Navigate to="/students" replace /> : 
                 <Navigate to="/" replace />
             } 
           />

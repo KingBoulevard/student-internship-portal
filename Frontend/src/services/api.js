@@ -1,4 +1,30 @@
 const API_BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'http://localhost:5000/api'; // Your Flask backend 
+
+
+export const resumeAPI = {
+  analyzeResume: (formData) => {
+    return fetch(`${BASE_URL}/analyze-resume`, {
+      method: 'POST',
+      body: formData,
+    }).then(handleResponse);
+  },
+
+  analyzeMultipleResumes: (formData) => {
+    return fetch(`${BASE_URL}/analyze-multiple-resumes`, {
+      method: 'POST',
+      body: formData,
+    }).then(handleResponse);
+  },
+};
+
+const handleResponse = async (response) => {
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Request failed');
+  }
+  return data;
+};
 
 // Generic API call function with auth headers
 export const apiCall = async (endpoint, options = {}) => {

@@ -16,53 +16,36 @@ function Login() {
   });
   const navigate = useNavigate();
 
-  // 🎯 Refs to prevent rapid state updates
   const lastEmailUpdate = useRef(0);
   const lastPasswordUpdate = useRef(0);
 
-  // Smart user type detection based on email
   const detectUserType = (email) => {
     if (!email.includes('@')) return 'employer';
     
     const emailDomain = email.toLowerCase().split('@')[1];
     
-    const studentDomains = [
-      'unza.zm',
-      'cs.unza.zm',
-    ];
-    
-    const adminDomains = [
-      'admin.university.edu',
-      'it.university.edu',
-      'careers.university.edu'
-    ];
+    const studentDomains = ['unza.zm', 'cs.unza.zm'];
+    const adminDomains = ['admin.university.edu', 'it.university.edu', 'careers.university.edu'];
     
     if (studentDomains.some(domain => emailDomain === domain || emailDomain.endsWith('.' + domain))) {
       return 'student';
     }
-    
     if (adminDomains.some(domain => emailDomain === domain)) {
       return 'admin';
     }
-    
     return 'employer';
   };
 
-  // 🎯 Debounced input handlers to prevent rapid updates
   const handleEmailChange = (e) => {
     const now = Date.now();
-    if (now - lastEmailUpdate.current < 30) {
-      return;
-    }
+    if (now - lastEmailUpdate.current < 30) return;
     lastEmailUpdate.current = now;
     setEmail(e.target.value);
   };
 
   const handlePasswordChange = (e) => {
     const now = Date.now();
-    if (now - lastPasswordUpdate.current < 30) {
-      return;
-    }
+    if (now - lastPasswordUpdate.current < 30) return;
     lastPasswordUpdate.current = now;
     setPassword(e.target.value);
   };
@@ -74,6 +57,9 @@ function Login() {
     }));
   };
 
+  // =========================
+  // 🎯 LOGIN HANDLER
+  // =========================
   const handleLogin = async () => {
     if (!email || !password) {
       toast.error("Please enter both email and password.");
@@ -83,97 +69,124 @@ function Login() {
     setLoading(true);
 
     try {
-      let response;
-      
-      if (isLogin) {
-        // Login with smart detection
-        response = await authAPI.login({ email, password });
-      } else {
-        // Registration with smart detection
-        const userType = detectUserType(email);
-        const userData = { email, password };
-        
-        // Add type-specific fields
-        if (userType === 'student') {
-          userData.name = registerData.name;
-          userData.major = registerData.major;
-        } else if (userType === 'employer') {
-          userData.company_name = registerData.company_name;
-          userData.industry = registerData.industry;
-        }
-        
-        response = await authAPI.register(userData);
+      console.log("Attempting login:", email);
+
+      const response = await authAPI.login({ email, password });
+
+      if (response.error) {
+        toast.error(response.error);
+        return;
       }
 
-      if (isLogin) {
-        // 🎯 LOGIN SUCCESS - Store auth data and redirect to dashboard
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        localStorage.setItem('userType', response.userType);
-        
-        toast.success(`Welcome back, ${response.user.name || response.user.company_name || response.user.email}!`);
-        
-        // Navigate based on detected user type
-        setTimeout(() => {
-          switch (response.userType) {
-            case 'student':
-              navigate("/students/student");
-              break;
-            case 'employer':
-              navigate("/employers/EmployerDashboard");
-              break;
-            case 'admin':
-              navigate("/admin/dashboard");
-              break;
-            default:
-              navigate("/");
-          }
-        }, 1200);
-      } else {
-        // 🎯 REGISTRATION SUCCESS - Handle based on user type
-        const userType = detectUserType(email);
-        
-        if (userType === 'employer') {
-          // 🎯 EMPLOYER REGISTRATION - Store data and redirect to additional details
-          const employerRegistrationData = {
-            email: email,
-            company_name: registerData.company_name,
-            industry: registerData.industry,
-            userId: response.id || response.userId, // Use whatever your backend returns
-            token: response.token // Store token if provided
-          };
-          
-          // Store in localStorage for the additional details page
-          localStorage.setItem('employerRegistrationData', JSON.stringify(employerRegistrationData));
-          
-          toast.success("Account created! Please complete your company profile.");
-          
-          // Redirect to additional details page
-          setTimeout(() => {
-            navigate("/pages/employers/EmployerAdditionalDetails");
-          }, 1500);
-          
-        } else {
-          // 🎯 STUDENT/ADMIN REGISTRATION - Show success and switch to login
-          toast.success(`Registration successful! You can now login.`);
-          setIsLogin(true);
-          // Clear form
-          setRegisterData({ name: "", company_name: "", major: "", industry: "" });
-          setEmail("");
-          setPassword("");
-        }
+      const user = response.employer || response.user;
+      const userType = response.employer ? "employer" : response.userType || "student";
+
+      localStorage.setItem("token", response.token);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("userType", userType);
+
+      if (userType === "employer") {
+        localStorage.setItem("employer_id", user.id);
       }
+
+      toast.success(`Welcome back, ${user.name || user.company_name || user.email}!`);
+
+      setTimeout(() => {
+        switch (userType) {
+          case "student":
+            navigate("/students/student");
+            break;
+          case "employer":
+            navigate("/employers/");
+            break;
+          case "admin":
+            navigate("/admin/dashboard");
+            break;
+          default:
+            navigate("/");
+        }
+      }, 800);
 
     } catch (error) {
-      toast.error(error.message || "Authentication failed. Please try again.");
+      console.error("Login failed:", error);
+      toast.error(error.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  // =========================
+  // 🎯 REGISTRATION HANDLER
+  // =========================
+  const handleRegister = async () => {
+    if (!email || !password) {
+      toast.error("Please enter both email and password.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const userType = detectUserType(email);
+      const userData = { email, password };
+
+      if (userType === "student") {
+        userData.name = registerData.name;
+        userData.major = registerData.major;
+      } else if (userType === "employer") {
+        userData.company_name = registerData.company_name;
+        userData.industry = registerData.industry;
+      }
+
+      console.log("Register payload:", userData);
+
+      const response = await authAPI.register(userData);
+
+      if (response.error) {
+        toast.error(response.error);
+        return;
+      }
+
+      toast.success("Registration successful!");
+
+      if (userType === "employer") {
+        const employerRegistrationData = {
+          email,
+          company_name: registerData.company_name,
+          industry: registerData.industry,
+          userId: response.id || response.userId,
+          token: response.token || null,
+        };
+        localStorage.setItem("employerRegistrationData", JSON.stringify(employerRegistrationData));
+
+        setTimeout(() => {
+          navigate("/employers/EmployerAdditionalDetails");
+        }, 1000);
+      } else {
+        // Student/Admin: switch to login
+        setIsLogin(true);
+        setRegisterData({ name: "", company_name: "", major: "", industry: "" });
+        setEmail("");
+        setPassword("");
+      }
+    } catch (error) {
+      console.error("Registration failed:", error);
+      toast.error(error.message || "Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAuthSubmit = () => {
+    if (isLogin) {
+      handleLogin();
+    } else {
+      handleRegister();
+    }
+  };
+
   const handleRegisterRedirect = () => {
     setIsLogin(!isLogin);
-    // Clear form when switching modes
     if (!isLogin) {
       setRegisterData({ name: "", company_name: "", major: "", industry: "" });
       setEmail("");
@@ -181,14 +194,12 @@ function Login() {
     }
   };
 
-  // Safe key handler
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !loading) {
-      handleLogin();
+      handleAuthSubmit();
     }
   };
 
-  // Get detected user type for display
   const detectedUserType = email ? detectUserType(email) : null;
 
   return (
@@ -198,7 +209,6 @@ function Login() {
           {isLogin ? 'Login to Internship Portal' : 'Create Account'}
         </h1>
 
-        {/* User Type Detection Info */}
         {email && detectedUserType && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
             <p className="text-sm text-blue-800">
@@ -234,7 +244,6 @@ function Login() {
             disabled={loading}
           />
 
-          {/* Registration Fields */}
           {!isLogin && (
             <>
               {detectedUserType === 'student' && (
@@ -259,7 +268,7 @@ function Login() {
                   />
                 </>
               )}
-              
+
               {detectedUserType === 'employer' && (
                 <>
                   <input
@@ -286,12 +295,10 @@ function Login() {
           )}
 
           <button
-            onClick={handleLogin}
+            onClick={handleAuthSubmit}
             disabled={loading}
             className={`w-full p-2 rounded transition-colors ${
-              loading 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-blue-600 hover:bg-blue-700'
+              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             } text-white`}
           >
             {loading ? 'Processing...' : (isLogin ? 'Login' : 'Register')}
@@ -304,20 +311,6 @@ function Login() {
           >
             {isLogin ? "Don't have an account? Register here" : "Already have an account? Login here"}
           </button>
-        </div>
-
-        {/* Smart Detection Guide */}
-        <div className="mt-6 p-4 bg-gray-50 rounded border">
-          <h4 className="font-semibold text-sm mb-2">🎓 Smart User Detection</h4>
-          <p className="text-xs text-gray-600 mb-1">
-            <strong>Student emails:</strong> @unza.zm, @cs.unza.zm
-          </p>
-          <p className="text-xs text-gray-600 mb-1">
-            <strong>Employer emails:</strong> Any other email domain
-          </p>
-          <p className="text-xs text-gray-500">
-            No need to select role - the system detects it automatically!
-          </p>
         </div>
       </div>
     </div>

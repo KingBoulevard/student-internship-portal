@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resume Analyzer</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <div id="flash-messages" class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h1>Resume Analyzer</h1>
+        <div>
+            <a href="{{ url_for('admin') }}">Admin Dashboard</a>
+        </div>
+    </div>
+
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <label>Resume (PDF):</label>
+        <input type="file" name="resume" required>
+
+        <label>Job Description:</label>
+        <select name="jd_text">
+            <option value="">Select a Job Description (optional)</option>
+            {% for jd in job_descriptions %}
+                <option value="{{ jd }}" {% if jd == selected_jd %}selected{% endif %}>{{ jd }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Analyze</button>
+    </form>
+    <div id="loading" class="loading-spinner"></div>
+
+    {% if result %}
+    <div class="results">
+        <h2>Results</h2>
+        <p><b>Name:</b> {{ result.name }}</p>
+        <p><b>Email:</b> {{ result.email }}</p>
+        <p><b>Mobile:</b> {{ result.mobile }}</p>
+        <p><b>Pages:</b> {{ result.pages }}</p>
+        <p><b>Skills:</b> {{ result.skills }}</p>
+
+        {% if score is defined %}
+            {% if score >= 80 %}
+                {% set color_class = "green" %}
+            {% elif score >= 50 %}
+                {% set color_class = "yellow" %}
+            {% else %}
+                {% set color_class = "red" %}
+            {% endif %}
+
+            <h3>Resume Score</h3>
+            <div class="progress-container">
+                <div class="progress-bar {{ color_class }}" style="width: {{ score }}%;">
+                    {{ score }}%
+                </div>
+            </div>
+        {% endif %}
+
+        {% if recommended_skills %}
+        <h3>Recommended Skills to Add</h3>
+        <ul>
+            {% for s in recommended_skills %}
+            <li>{{ s }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const flashMessages = document.querySelectorAll(".flash");
+        const flashContainer = document.getElementById("flash-messages");
+
+        // Store new flash messages in sessionStorage
+        if (flashMessages.length > 0) {
+            const messages = Array.from(flashMessages).map(msg => ({
+                text: msg.textContent,
+                class: msg.className
+            }));
+            sessionStorage.setItem("flashMessages", JSON.stringify(messages));
+        } else {
+            // Display stored messages only if no new flash messages exist
+            const storedMessages = sessionStorage.getItem("flashMessages");
+            if (storedMessages) {
+                const messages = JSON.parse(storedMessages);
+                messages.forEach(msg => {
+                    const div = document.createElement("div");
+                    div.className = msg.class;
+                    div.textContent = msg.text;
+                    flashContainer.appendChild(div);
+                });
+                // Clear sessionStorage to prevent duplicate display
+                sessionStorage.removeItem("flashMessages");
+            }
+        }
+
+        // Clear flash messages after 5 seconds
+        if (flashContainer.children.length > 0) {
+            setTimeout(() => {
+                flashContainer.innerHTML = "";
+            }, 5000);
+        }
+
+        // Show loading spinner on form submit
+        const form = document.getElementById("upload-form");
+        const spinner = document.getElementById("loading");
+        form.addEventListener("submit", () => {
+            spinner.style.display = "block";
+        });
+    });
+</script>
+</body>
+</html>

@@ -6,7 +6,7 @@ function EmployerSidebar() {
       <h2 className="text-xl font-bold mb-4">Employer Menu</h2>
       <nav className="space-y-2">
         <NavLink
-          to="/employer"
+          to="/employers/post-job"
           className={({ isActive }) =>
             isActive
               ? "bg-green-600 px-3 py-2 block rounded"
@@ -16,7 +16,7 @@ function EmployerSidebar() {
           Post a Job
         </NavLink>
         <NavLink
-          to="/employer/jobs"
+          to="/employers/jobs"
           className={({ isActive }) =>
             isActive
               ? "bg-green-600 px-3 py-2 block rounded"

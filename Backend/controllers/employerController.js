@@ -27,41 +27,50 @@ const employerController = {
 
     // Employer login
     login: async (req, res) => {
-        try {
-            const { email, password } = req.body;
-            
-            const employer = await Employer.findByEmail(email);
-            if (!employer) {
-                return res.status(401).json({ error: 'Invalid credentials' });
-            }
+    try {
+        const { email, password } = req.body;
 
-            const isPasswordValid = await bcrypt.compare(password, employer.password);
-            if (!isPasswordValid) {
-                return res.status(401).json({ error: 'Invalid credentials' });
-            }
-
-            // Generate JWT token
-            const token = jwt.sign(
-                { id: employer.id, email: employer.email, type: 'employer' },
-                process.env.JWT_SECRET,
-                { expiresIn: '24h' }
-            );
-
-            res.json({ 
-                message: 'Login successful',
-                token,
-                employer: {
-                    id: employer.id,
-                    company_name: employer.company_name,
-                    email: employer.email,
-                    is_verified: employer.is_verified
-                }
-            });
-        } catch (error) {
-            console.error('Error during employer login:', error);
-            res.status(500).json({ error: 'Login failed' });
+        // Find employer by email
+        const employer = await Employer.findByEmail(email);
+        if (!employer) {
+            return res.status(401).json({ error: 'Invalid credentials' });
         }
-    },
+
+        // Validate password
+        const isPasswordValid = await bcrypt.compare(password, employer.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: employer.id, email: employer.email, type: 'employer' },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        // Prepare employer data for frontend
+        const employerData = {
+            id: employer.id,
+            company_name: employer.company_name,
+            email: employer.email,
+            is_verified: employer.is_verified,
+            // Include any other fields you want readily accessible
+        };
+
+        // Send response
+        res.json({
+            success: true,
+            message: 'Login successful',
+            token,          // JWT token for secure API calls
+            employer: employerData // Full employer info for localStorage
+        });
+    } catch (error) {
+        console.error('Error during employer login:', error);
+        res.status(500).json({ success: false, error: 'Login failed' });
+    }
+},
+
 
     // Get employer profile
     getProfile: async (req, res) => {

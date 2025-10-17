@@ -1,0 +1,190 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f7fa;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2, h3 {
+    color: #2c3e50;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.container {
+    width: 95%;
+    max-width: 1200px;
+    margin: 20px auto;
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+label {
+    font-weight: bold;
+}
+
+input[type="file"],
+textarea,
+select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+button {
+    padding: 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+.results {
+    margin-top: 25px;
+    padding: 20px;
+    background: #ecf0f1;
+    border-radius: 10px;
+}
+
+.results p {
+    margin: 8px 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    table-layout: fixed;
+    word-wrap: break-word;
+}
+
+table th, table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+table th {
+    background-color: #3498db;
+    color: white;
+}
+
+table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+table tr:hover {
+    background-color: #f1f1f1;
+}
+
+
+/* Progress bars */
+.progress-container {
+    width: 100%;
+    background-color: #ddd;
+    border-radius: 10px;
+    margin: 15px 0;
+    height: 25px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    text-align: center;
+    line-height: 25px;
+    color: white;
+    font-weight: bold;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+/* Gradients for score colors */
+.progress-bar.green {
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+}
+
+.progress-bar.yellow {
+    background: linear-gradient(90deg, #f1c40f, #f39c12);
+}
+
+.progress-bar.red {
+    background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+
+/* Back to Resume Page button */
+.btn {
+    display: inline-block;
+    padding: 8px 12px;
+    margin-bottom: 15px;
+    background-color: #007BFF;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+/* Flash messages */
+.flash-messages {
+    margin: 15px 0;
+}
+
+.flash {
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.flash.success {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.flash.warning {
+    background-color: #f39c12;
+    color: white;
+}
+
+.flash.error {
+    background-color: #e74c3c;
+    color: white;
+}
+
+/* NEW: Loading spinner */
+.loading-spinner {
+    display: none;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
