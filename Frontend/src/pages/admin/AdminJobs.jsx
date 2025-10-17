@@ -7,22 +7,31 @@ export default function AdminJobs() {
   const [filter, setFilter] = useState("");
   const pendingRef = useRef(null);
 
-  useEffect(() => {
-    const load = () => {
-      const raw = localStorage.getItem("employerJobs");
-      setJobs(raw ? JSON.parse(raw) : []);
-    };
-    load();
+  // 🔹 Logout Handler
+  const handleLogout = () => {
+    localStorage.removeItem("loggedInUser");
+    localStorage.removeItem("isAdminLoggedIn");
+    window.location.href = "/admin-login";
+  };
 
-    const onStorage = (e) => {
+  // 🔹 Load jobs from localStorage
+  useEffect(() => {
+    const loadJobs = () => {
+      const storedJobs = localStorage.getItem("employerJobs");
+      setJobs(storedJobs ? JSON.parse(storedJobs) : []);
+    };
+    loadJobs();
+
+    const handleStorageChange = (e) => {
       if (e.key === "employerJobs") {
         setJobs(e.newValue ? JSON.parse(e.newValue) : []);
       }
     };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
+  // 🔹 Commit pending deletions immediately
   const commitPendingImmediately = () => {
     if (pendingRef.current) {
       clearTimeout(pendingRef.current.timerId);
@@ -31,6 +40,7 @@ export default function AdminJobs() {
     }
   };
 
+  // 🔹 Undo Delete
   const undoDelete = () => {
     if (!pendingRef.current) return;
     const { item, index } = pendingRef.current;
@@ -43,14 +53,15 @@ export default function AdminJobs() {
     toast.success("Deletion undone");
   };
 
+  // 🔹 Schedule Delete Commit
   const scheduleCommit = (item, index) => {
-    if (pendingRef.current) {
-      commitPendingImmediately();
-    }
+    if (pendingRef.current) commitPendingImmediately();
+
     const timerId = setTimeout(() => {
       localStorage.setItem("employerJobs", JSON.stringify(jobs));
       pendingRef.current = null;
     }, 8000);
+
     pendingRef.current = { item, index, timerId };
 
     toast((t) => (
@@ -71,6 +82,7 @@ export default function AdminJobs() {
     ), { duration: 8000 });
   };
 
+  // 🔹 Delete Job
   const handleDelete = (id) => {
     const idx = jobs.findIndex((j) => j.id === id);
     if (idx === -1) return;
@@ -80,6 +92,7 @@ export default function AdminJobs() {
     scheduleCommit(item, idx);
   };
 
+  // 🔹 Save pending jobs on unmount
   useEffect(() => {
     return () => {
       if (pendingRef.current) {
@@ -88,10 +101,10 @@ export default function AdminJobs() {
         pendingRef.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [jobs]);
 
-  const filtered = jobs.filter((j) => {
+  // 🔹 Filtered list
+  const filteredJobs = jobs.filter((j) => {
     if (!filter) return true;
     const q = filter.toLowerCase();
     return (
@@ -102,49 +115,67 @@ export default function AdminJobs() {
   });
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold border-b pb-2">All Posted Jobs</h2>
-        <input
-          type="search"
-          placeholder="Search by title, company, location"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="border px-3 py-2 rounded w-64"
-        />
+    <div className="min-h-screen bg-gray-50 text-gray-800">
+      {/* 🔹 Top Navbar */}
+      <div className="w-full bg-cyan-200 text-white flex justify-between items-center px-8 py-4 shadow-md">
+        <h1 className="text-xl font-bold">Manage Jobs</h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg font-medium transition"
+        >
+          Logout
+        </button>
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="text-gray-600">No jobs posted yet.</p>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-4">
-          {filtered.map((job) => (
-            <div key={job.id} className="bg-white p-4 rounded shadow-sm border">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-semibold text-green-700">{job.title}</h3>
-                  <p className="text-sm text-gray-600">{job.company} • {job.location}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Deadline</p>
-                  <p className="text-sm">{job.deadline ?? "—"}</p>
-                </div>
-              </div>
-
-              <p className="text-sm mt-2"><strong>Type:</strong> {job.type}</p>
-
-              <div className="mt-3 flex gap-2">
-                <button
-                  onClick={() => handleDelete(job.id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
+      {/* 🔹 Main Content */}
+      <div className="pt-10 px-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold border-b pb-2">All Posted Jobs</h2>
+          <input
+            type="search"
+            placeholder="Search by title, company, location"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="border px-3 py-2 rounded w-64"
+          />
         </div>
-      )}
+
+        {filteredJobs.length === 0 ? (
+          <p className="text-gray-600">No jobs posted yet.</p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {filteredJobs.map((job) => (
+              <div key={job.id} className="bg-white p-4 rounded shadow-sm border">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold text-green-700">{job.title}</h3>
+                    <p className="text-sm text-gray-600">
+                      {job.company} • {job.location}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Deadline</p>
+                    <p className="text-sm">{job.deadline ?? "—"}</p>
+                  </div>
+                </div>
+
+                <p className="text-sm mt-2">
+                  <strong>Type:</strong> {job.type}
+                </p>
+
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => handleDelete(job.id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

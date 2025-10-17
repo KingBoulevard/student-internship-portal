@@ -9,48 +9,32 @@ function PostedJobs() {
   const [selectedJob, setSelectedJob] = useState(null);
 
   useEffect(() => {
-    fetchPostedJobs();
+    fetchEmployerJobs();
   }, []);
 
-  const fetchPostedJobs = async () => {
+  const fetchEmployerJobs = async () => {
     try {
       setLoading(true);
-      // Get employer ID properly
-      const employerId = localStorage.getItem('employer_id');
-      
-      if (!employerId) {
-        toast.error("Please log in as an employer to view your jobs");
-        // Fallback to localStorage if available
-        const localData = localStorage.getItem("employerJobs");
-        if (localData) {
-          setJobs(JSON.parse(localData));
-        }
-        setLoading(false);
-        return;
+
+      // Fetch current employer from backend
+      const employerRes = await resumeAPI.getCurrentEmployer();
+      if (!employerRes.success || !employerRes.employer) {
+        throw new Error("Please log in as an employer to view your jobs");
       }
 
-      // Ensure employerId is a number for the API call
-      const numericEmployerId = parseInt(employerId);
-      if (isNaN(numericEmployerId)) {
-        throw new Error("Invalid employer ID");
-      }
+      const employerId = employerRes.employer.id;
 
-      const result = await resumeAPI.getEmployerJobPostings(numericEmployerId);
-      
+      // Fetch jobs for this employer
+      const result = await resumeAPI.getEmployerJobPostings(employerId);
+
       if (result.success) {
         setJobs(result.jobPostings || []);
       } else {
-        toast.error(result.error || "Failed to fetch jobs from server");
-        // Fallback to localStorage if API fails
-        const localData = localStorage.getItem("employerJobs");
-        if (localData) setJobs(JSON.parse(localData));
+        throw new Error(result.error || "Failed to fetch jobs from server");
       }
     } catch (error) {
-      console.error("Error fetching jobs:", error);
-      toast.error("Failed to load jobs from server");
-      // Fallback to localStorage
-      const localData = localStorage.getItem("employerJobs");
-      if (localData) setJobs(JSON.parse(localData));
+      console.error("Error fetching employer jobs:", error);
+      toast.error(error.message || "Failed to load jobs");
     } finally {
       setLoading(false);
     }
@@ -59,16 +43,8 @@ function PostedJobs() {
   const handleDeleteJob = async (jobId) => {
     if (window.confirm("Are you sure you want to delete this job posting?")) {
       try {
-        // TODO: Add API call to delete from backend when endpoint is available
         await resumeAPI.deleteJobPosting(jobId);
-        
-        // Update local state
-        const updatedJobs = jobs.filter(job => job.id !== jobId);
-        setJobs(updatedJobs);
-        
-        // Update localStorage
-        localStorage.setItem("employerJobs", JSON.stringify(updatedJobs));
-        
+        setJobs(jobs.filter(job => job.id !== jobId));
         toast.success("Job deleted successfully");
       } catch (error) {
         console.error("Error deleting job:", error);
@@ -78,13 +54,13 @@ function PostedJobs() {
   };
 
   const handleViewApplications = (jobId) => {
-    // TODO: Implement navigation to applications page
     toast.success(`Viewing applications for job ${jobId}`);
+    // Implement navigation later
   };
 
   const handleAnalyzeResumes = (jobId) => {
-    // TODO: Implement navigation to resume analysis page
     toast.success(`Analyzing resumes for job ${jobId}`);
+    // Implement navigation later
   };
 
   if (loading) {
@@ -106,7 +82,7 @@ function PostedJobs() {
         <div className="text-center py-12">
           <p className="text-gray-600 text-lg mb-4">You haven't posted any jobs yet.</p>
           <a 
-            href="/employer/post-job" 
+            href="/employers/post-job" 
             className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded inline-block transition duration-200"
           >
             Post Your First Job
@@ -142,47 +118,35 @@ function PostedJobs() {
                 </div>
               </div>
 
-              {/* Applications Count */}
               <div className="mb-4">
                 <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
                   {job.applications_count || 0} Applications
                 </span>
               </div>
 
-              {/* Job Details (Collapsible) */}
               {selectedJob?.id === job.id && (
                 <div className="mt-4 p-4 bg-gray-50 rounded-lg border animate-fade-in">
                   <div className="space-y-4">
-                    {/* Job Description */}
                     <div>
                       <h4 className="font-semibold text-gray-800 mb-2">Job Description</h4>
                       <p className="text-gray-700 text-sm whitespace-pre-line">{job.description}</p>
                     </div>
-
-                    {/* Requirements */}
                     <div>
                       <h4 className="font-semibold text-gray-800 mb-2">Requirements</h4>
                       <p className="text-gray-700 text-sm whitespace-pre-line">{job.requirements}</p>
                     </div>
-
-                    {/* Required Skills */}
                     {job.required_skills && (
                       <div>
                         <h4 className="font-semibold text-gray-800 mb-2">Required Skills</h4>
                         <div className="flex flex-wrap gap-2">
                           {job.required_skills.split(',').map((skill, index) => (
-                            <span 
-                              key={index}
-                              className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs"
-                            >
+                            <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
                               {skill.trim()}
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
-
-                    {/* Action Buttons */}
                     <div className="flex gap-3 pt-4 border-t">
                       <button
                         onClick={() => handleViewApplications(job.id)}

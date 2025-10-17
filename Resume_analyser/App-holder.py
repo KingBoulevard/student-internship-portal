@@ -29,7 +29,7 @@ def get_db_connection():
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET", "dev_secret_key")
-CORS(app)  # Enable CORS for all routes
+CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -268,6 +268,94 @@ def log_request_info():
 # -----------------------
 # API ROUTES for Frontend Integration
 # -----------------------
+
+# -----------------------
+# Employer login
+# -----------------------
+@app.route("/api/employer/login", methods=["POST"])
+def employer_login():
+    try:
+        data = request.get_json() or {}
+        email = data.get("email")
+        password = data.get("password")
+
+        if not email or not password:
+            return jsonify({"success": False, "error": "Email and password required"}), 400
+
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            # Fetch employer by email
+            cursor.execute("""
+                SELECT id, name, email, password_hash, company
+                FROM employers
+                WHERE email = %s
+            """, (email,))
+            employer = cursor.fetchone()
+        conn.close()
+
+        if not employer:
+            return jsonify({"success": False, "error": "Invalid email or password"}), 401
+
+        employer_id, name, email_db, password_hash, company = employer
+
+        # Check password - assuming plain text for now, ideally use hashed passwords
+        # For hashed passwords, replace this with a proper check (bcrypt, werkzeug.security, etc.)
+        if password != password_hash:
+            return jsonify({"success": False, "error": "Invalid email or password"}), 401
+
+        # Set session
+        session["employer_id"] = employer_id
+
+        # Return basic employer info
+        return jsonify({
+            "success": True,
+            "message": "Logged in successfully",
+            "employer": {
+                "id": employer_id,
+                "name": name,
+                "email": email_db,
+                "company": company
+            }
+        })
+    except Exception as e:
+        print(f"Error in employer_login: {e}")
+        traceback.print_exc()
+        return jsonify({"success": False, "error": "Server error"}), 500
+
+
+# -----------------------
+# The /me endpoint (fixed)
+# -----------------------
+@app.route("/api/employer/me", methods=["GET"])
+def get_current_employer():
+    employer_id = session.get("employer_id")
+    if not employer_id:
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                SELECT id, name, email, company
+                FROM employers
+                WHERE id = %s
+            """, (employer_id,))
+            employer = cursor.fetchone()
+        conn.close()
+
+        if not employer:
+            return jsonify({"success": False, "error": "Employer not found"}), 404
+
+        # Convert fetched tuple to dictionary
+        columns = ['id', 'name', 'email', 'company']
+        employer_dict = dict(zip(columns, employer))
+
+        return jsonify({"success": True, "employer": employer_dict})
+    except Exception as e:
+        print(f"Error fetching current employer: {e}")
+        traceback.print_exc()
+        return jsonify({"success": False, "error": "Server error"}), 500
+
 
 @app.route("/api/employers/job-postings", methods=["GET"])
 def get_employer_job_postings():

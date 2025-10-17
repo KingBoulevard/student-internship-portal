@@ -1,17 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const studentController = require('../controllers/studentController');
+const auth = require('../middleware/auth');
 
-// Test with a simple route first
+// ✅ Test route
 router.get('/', (req, res) => {
-    res.json({ message: 'Students route working!' });
+  res.json({ message: '🎓 Students API is active!' });
 });
 
-router.get('/:id', (req, res) => {
-    res.json({ message: `Get student ${req.params.id}` });
-});
+// ✅ Get specific student profile (protected)
+router.get('/:id', auth, studentController.getProfile);
 
-router.post('/', (req, res) => {
-    res.json({ message: 'Create student' });
-});
-
-module.exports = router; 
+module.exports = router;

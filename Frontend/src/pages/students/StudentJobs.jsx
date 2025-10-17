@@ -8,15 +8,17 @@ function StudentJobs() {
   const { appliedJobs, applyToJob } = useApplications();
 
   useEffect(() => {
-    const stored = localStorage.getItem("employerJobs");
-    if (stored) {
-      try {
-        setPostedJobs(JSON.parse(stored));
-      } catch (err) {
-        console.error("Failed to parse jobs:", err);
-      }
+  const fetchJobs = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/internships");
+      const data = await res.json();
+      setPostedJobs(data); // assuming data is an array of jobs
+    } catch (err) {
+      console.error("Failed to fetch jobs:", err);
     }
-  }, []);
+  };
+  fetchJobs();
+}, []);
 
   return (
     <DashboardLayout>

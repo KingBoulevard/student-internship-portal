@@ -8,6 +8,7 @@ const studentRoutes = require('./routes/studentRoutes');
 const internshipRoutes = require('./routes/internshipRoutes');
 const employerRoutes = require('./routes/employerRoutes');
 const authRoutes = require('./routes/authRoutes');
+const applicationRoutes = require('./routes/applicationRoutes');
 
 // Import database connection
 const db = require('./config/db');
@@ -24,6 +25,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/internships', internshipRoutes);
 app.use('/api/employers', employerRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/applications', applicationRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
@@ -34,7 +36,8 @@ app.get('/', (req, res) => {
             auth: '/api/auth',
             students: '/api/students',
             internships: '/api/internships',
-            employers: '/api/employers'
+            employers: '/api/employers',
+            applications: '/api/applications',
         }
     });
 });
